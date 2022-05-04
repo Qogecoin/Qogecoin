@@ -1,9 +1,9 @@
-// Copyright (c) 2018 The Bitcoin Core developers
+// Copyright (c) 2018 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <init.h>
-#include <qt/bitcoin.h>
+#include <qt/qogecoin.h>
 #include <qt/guiutil.h>
 #include <qt/test/optiontests.h>
 #include <test/util/setup_common.h>
@@ -14,6 +14,7 @@
 
 #include <univalue.h>
 
+<<<<<<< HEAD
 #include <fstream>
 
 OptionTests::OptionTests(interfaces::Node& node) : m_node(node)
@@ -73,7 +74,7 @@ void OptionTests::migrateSettings()
 
 void OptionTests::integerGetArgBug()
 {
-    // Test regression https://github.com/bitcoin/bitcoin/issues/24457. Ensure
+    // Test regression https://github.com/qogecoin/qogecoin/issues/24457. Ensure
     // that setting integer prune value doesn't cause an exception to be thrown
     // in the OptionsModel constructor
     gArgs.LockSettings([&](util::Settings& settings) {
@@ -95,6 +96,7 @@ void OptionTests::parametersInteraction()
     // It was fixed via https://github.com/bitcoin-core/gui/pull/568.
     // With fListen=false in ~/.config/Bitcoin/Bitcoin-Qt.conf and all else left as default,
     // bitcoin-qt should set both -listen and -listenonion to false and start successfully.
+
     gArgs.LockSettings([&](util::Settings& s) {
         s.forced_settings.erase("listen");
         s.forced_settings.erase("listenonion");

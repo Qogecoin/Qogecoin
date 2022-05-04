@@ -1,9 +1,9 @@
-// Copyright (c) 2018-2021 The Bitcoin Core developers
+// Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_INTERFACES_NODE_H
-#define BITCOIN_INTERFACES_NODE_H
+#ifndef QOGECOIN_INTERFACES_NODE_H
+#define QOGECOIN_INTERFACES_NODE_H
 
 #include <consensus/amount.h>          // For CAmount
 #include <net.h>                       // For NodeId
@@ -65,7 +65,7 @@ public:
     virtual std::string getName() = 0;
 };
 
-//! Top-level interface for a bitcoin node (bitcoind process).
+//! Top-level interface for a qogecoin node (qogecoind process).
 class Node
 {
 public:
@@ -281,4 +281,4 @@ struct BlockTip {
 
 } // namespace interfaces
 
-#endif // BITCOIN_INTERFACES_NODE_H
+#endif // QOGECOIN_INTERFACES_NODE_H

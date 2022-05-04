@@ -139,14 +139,14 @@ chain for " target " development."))
     "--enable-default-ssp" "yes")
     "--enable-default-pie" "yes"))
 
-(define* (make-bitcoin-cross-toolchain target
+(define* (make-qogecoin-cross-toolchain target
                                        #:key
                                        (base-gcc-for-libc base-gcc)
                                        (base-kernel-headers base-linux-kernel-headers)
                                        (base-libc (make-glibc-with-bind-now (make-glibc-without-werror glibc-2.24)))
                                        (base-gcc (make-gcc-rpath-link (hardened-gcc base-gcc))))
   "Convenience wrapper around MAKE-CROSS-TOOLCHAIN with default values
-desirable for building Bitcoin Core release binaries."
+desirable for building Qogecoin Core release binaries."
   (make-cross-toolchain target
                         base-gcc-for-libc
                         base-kernel-headers
@@ -559,7 +559,7 @@ inspecting signatures in Mach-O binaries.")
                                            "glibc-2.24-fcommon.patch"
                                            "glibc-2.24-guix-prefix.patch"))))))
 
-(define-public glibc-2.27/bitcoin-patched
+(define-public glibc-2.27/qogecoin-patched
   (package
     (inherit glibc-2.31)
     (version "2.27")
@@ -627,9 +627,9 @@ inspecting signatures in Mach-O binaries.")
            (list (cond ((string-contains target "riscv64-")
                         (make-bitcoin-cross-toolchain target
                                                       #:base-libc (make-glibc-with-stack-protector
-                                                        (make-glibc-with-bind-now (make-glibc-without-werror glibc-2.27/bitcoin-patched)))))
+                                                        (make-glibc-with-bind-now (make-glibc-without-werror glibc-2.27/qogecoin-patched)))))
                        (else
-                        (make-bitcoin-cross-toolchain target)))))
+                        (make-qogecoin-cross-toolchain target)))))
           ((string-contains target "darwin")
            (list clang-toolchain-10 binutils cmake xorriso python-signapple))
           (else '())))))
