@@ -725,6 +725,11 @@ static RPCHelpMan getblocktemplate()
         throw JSONRPCError(RPC_INVALID_PARAMETER, "getblocktemplate must be called with the signet rule set (call with {\"rules\": [\"segwit\", \"signet\"]})");
     }
 
+    // GBT must be called with 'segwit' set in the rules
+    if (setClientRules.count("segwit") != 1) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "getblocktemplate must be called with the segwit rule set (call with {\"rules\": [\"segwit\"]})");
+    }     
+            
     // Update block
     static CBlockIndex* pindexPrev;
     static int64_t nStart;
@@ -757,8 +762,13 @@ static RPCHelpMan getblocktemplate()
     pblock->nNonce = 0;
 
     // NOTE: If at some point we support pre-segwit miners post-segwit-activation, this needs to take segwit support into consideration
+<<<<<<< HEAD
     const bool fPreSegWit = !DeploymentActiveAfter(pindexPrev, chainman, Consensus::DEPLOYMENT_SEGWIT);
 
+=======
+    const bool fPreSegWit = !DeploymentActiveAfter(pindexPrev, consensusParams, Consensus::DEPLOYMENT_SEGWIT);
+                   
+>>>>>>> 543fa85e1 (Revert commit daeb9d0a140605cb7b5d35460f136b2fc4e097c3)
     UniValue aCaps(UniValue::VARR); aCaps.push_back("proposal");
 
     UniValue transactions(UniValue::VARR);
