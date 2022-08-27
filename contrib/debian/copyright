@@ -7,7 +7,7 @@ Source: https://github.com/qogecoin/qogecoin
 Files: *
 Copyright: 2009-2022, Qogecoin Core Developers
 License: Expat
-Comment: The Bitcoin and Qogecoin Core Authors encompasses the current developers listed on qogecoin.org,
+Comment: The Qogecoin and Qogecoin Core Authors encompasses the current developers listed on qogecoin.org,
          as well as the numerous contributors to the project.
 
 Files: debian/*

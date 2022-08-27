@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -122,7 +122,7 @@ private:
     bool m_enable_psbt_controls;
 
     //! In-memory settings for display. These are stored persistently by the
-    //! bitcoin node but it's also nice to store them in memory to prevent them
+    //! qogecoin node but it's also nice to store them in memory to prevent them
     //! getting cleared when enable/disable toggles are used in the GUI.
     int m_prune_size_gb;
     QString m_proxy_ip;

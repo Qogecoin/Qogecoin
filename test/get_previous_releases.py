@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
+# Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -48,9 +48,9 @@ def download_binary(tag, args) -> int:
     platform = args.platform
     if tag < "v23" and platform in ["x86_64-apple-darwin", "arm64-apple-darwin"]:
         platform = "osx64"
-    tarball = 'bitcoin-{tag}-{platform}.tar.gz'.format(
+    tarball = 'qogecoin-{tag}-{platform}.tar.gz'.format(
         tag=tag[1:], platform=platform)
-    tarballUrl = 'https://bitcoincore.org/{bin_path}/{tarball}'.format(
+    tarballUrl = 'https://qogecoincore.org/{bin_path}/{tarball}'.format(
         bin_path=bin_path, tarball=tarball)
 
     print('Fetching: {tarballUrl}'.format(tarballUrl=tarballUrl))

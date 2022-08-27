@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016 The Bitcoin and Qogecoin Core Authors
+# Copyright (c) 2013-2016 The Qogecoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -340,7 +340,7 @@ nodist_test_test_qogecoin_SOURCES = $(GENERATED_TEST_FILES)
 
 $(QOGECOIN_TESTS): $(GENERATED_TEST_FILES)
 
-CLEAN_QOGECOIN_TEST = test/*.gcda test/*.gcno test/fuzz/*.gcda test/fuzz/*.gcno test/util/*.gcda test/util/*.gcno $(GENERATED_TEST_FILES) $(addsuffix .log,$(basename $(BITCOIN_TESTS)))
+CLEAN_QOGECOIN_TEST = test/*.gcda test/*.gcno test/fuzz/*.gcda test/fuzz/*.gcno test/util/*.gcda test/util/*.gcno $(GENERATED_TEST_FILES) $(addsuffix .log,$(basename $(QOGECOIN_TESTS)))
 
 CLEANFILES += $(CLEAN_QOGECOIN_TEST)
 

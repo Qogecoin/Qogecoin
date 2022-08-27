@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2020 The Bitcoin and Qogecoin Core Authors
+// Copyright (c) 2018-2020 The Qogecoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,7 +21,7 @@
 #define COPYRIGHT_HOLDERS "The %s developers"
 
 /* Copyright holder(s) */
-#define COPYRIGHT_HOLDERS_FINAL "The Bitcoin and Qogecoin Core Authors"
+#define COPYRIGHT_HOLDERS_FINAL "The Qogecoin and Qogecoin Core Authors"
 
 /* Replacement for %s in copyright holders string */
 #define COPYRIGHT_HOLDERS_SUBSTITUTION "Qogecoin Core"

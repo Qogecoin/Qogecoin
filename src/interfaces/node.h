@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
+// Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -102,7 +102,7 @@ public:
     //! would be ignored because it is also specified in the command line.
     virtual bool isSettingIgnored(const std::string& name) = 0;
 
-    //! Return setting value from <datadir>/settings.json or bitcoin.conf.
+    //! Return setting value from <datadir>/settings.json or qogecoin.conf.
     virtual util::SettingsValue getPersistentSetting(const std::string& name) = 0;
 
     //! Update a setting in <datadir>/settings.json.

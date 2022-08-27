@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016 The Bitcoin and Qogecoin Core Authors
+# Copyright (c) 2013-2016 The Qogecoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -404,14 +404,9 @@ libqogecoin_node_a_SOURCES = \
   rpc/blockchain.cpp \
   rpc/mempool.cpp \
   rpc/mining.cpp \
-<<<<<<< HEAD
   rpc/net.cpp \
   rpc/node.cpp \
   rpc/output_script.cpp \
-=======
-  rpc/misc.cpp \
-  rpc/net.cpp \
->>>>>>> 1a6cb3a78 (A Minor Change)
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
   rpc/server_util.cpp \
@@ -431,12 +426,8 @@ libqogecoin_node_a_SOURCES = \
   $(QOGECOIN_CORE_H)
 
 if ENABLE_WALLET
-<<<<<<< HEAD
 libqogecoin_node_a_SOURCES += wallet/init.cpp
 libqogecoin_node_a_CPPFLAGS += $(BDB_CPPFLAGS)
-=======
-libqogecoin_node_a_SOURCES += wallet/init.cpp
->>>>>>> 1a6cb3a78 (A Minor Change)
 endif
 if !ENABLE_WALLET
 libqogecoin_node_a_SOURCES += dummywallet.cpp
@@ -456,15 +447,9 @@ endif
 
 # wallet: shared between qogecoind and qogecoin-qt, but only linked
 # when wallet enabled
-<<<<<<< HEAD
 libqogecoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(QOGECOIN_INCLUDES) $(BDB_CPPFLAGS) $(SQLITE_CFLAGS)
 libqogecoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libqogecoin_wallet_a_SOURCES = \
-=======
-libqogecoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(QOGECOIN_INCLUDES) $(SQLITE_CFLAGS)
-libqogecoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
-libqogecoin_wallet_a_SOURCES = \
->>>>>>> 1a6cb3a78 (A Minor Change)
   wallet/coincontrol.cpp \
   wallet/context.cpp \
   wallet/crypter.cpp \
@@ -890,16 +875,9 @@ endif
 
 # TODO: libqogecoinkernel is a work in progress consensus engine library, as more
 #       and more modules are decoupled from the consensus engine, this list will
-<<<<<<< HEAD
 #       shrink to only those which are absolutely necessary.
 libqogecoinkernel_la_SOURCES = \
   kernel/qogecoinkernel.cpp \
-=======
-#       shrink to only those which are absolutely necessary. For example, things
-#       like index/*.cpp will be removed.
-libqogecoinkernel_la_SOURCES = \
-  kernel/qogecoinkernel.cpp \
->>>>>>> 1a6cb3a78 (A Minor Change)
   arith_uint256.cpp \
   chain.cpp \
   chainparamsbase.cpp \
@@ -1064,7 +1042,7 @@ EXTRA_DIST += $(libqogecoin_ipc_mpgen_input)
 
 # Explicitly list dependencies on generated headers as described in
 # https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html#Recording-Dependencies-manually
-ipc/capnp/libqogecoin_ipc_a-protocol.$(OBJEXT): $(libbitcoin_ipc_mpgen_input:=.h)
+ipc/capnp/libqogecoin_ipc_a-protocol.$(OBJEXT): $(libqogecoin_ipc_mpgen_input:=.h)
 
 if BUILD_MULTIPROCESS
 LIBQOGECOIN_IPC=libqogecoin_ipc.a

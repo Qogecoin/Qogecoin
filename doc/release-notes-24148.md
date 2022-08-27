@@ -6,8 +6,8 @@ Wallet
 
 - The `wsh()` output descriptor was extended with Miniscript support. You can import Miniscript
   descriptors for P2WSH in a watchonly wallet to track coins, but you can't spend from them using
-  the Bitcoin Core wallet yet.
-  You can find more about Miniscript on the [reference website](https://bitcoin.sipa.be/miniscript/).
+  the Qogecoin Core wallet yet.
+  You can find more about Miniscript on the [reference website](https://qogecoin.sipa.be/miniscript/).
 
 
 Low-level changes

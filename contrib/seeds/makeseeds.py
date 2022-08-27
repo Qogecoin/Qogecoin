@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2013-2020 The Bitcoin and Qogecoin Core Authors
+# Copyright (c) 2013-2020 The Qogecoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -170,7 +170,7 @@ def ip_stats(ips: List[Dict]) -> str:
     return f"{hist['ipv4']:6d} {hist['ipv6']:6d} {hist['onion']:6d}"
 
 def parse_args():
-    argparser = argparse.ArgumentParser(description='Generate a list of bitcoin node seed ip addresses.')
+    argparser = argparse.ArgumentParser(description='Generate a list of qogecoin node seed ip addresses.')
     argparser.add_argument("-a","--asmap", help='the location of the asmap asn database file (required)', required=True)
     return argparser.parse_args()
 

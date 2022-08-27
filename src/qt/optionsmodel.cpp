@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -58,7 +58,7 @@ static const char* SettingName(OptionsModel::OptionID option)
     }
 }
 
-/** Call node.updateRwSetting() with Bitcoin 22.x workaround. */
+/** Call node.updateRwSetting() with Qogecoin 22.x workaround. */
 static void UpdateRwSetting(interfaces::Node& node, OptionsModel::OptionID option, const util::SettingsValue& value)
 {
     if (value.isNum() &&
@@ -67,33 +67,33 @@ static void UpdateRwSetting(interfaces::Node& node, OptionsModel::OptionID optio
          option == OptionsModel::Prune ||
          option == OptionsModel::PruneSize)) {
         // Write certain old settings as strings, even though they are numbers,
-        // because Bitcoin 22.x releases try to read these specific settings as
+        // because Qogecoin 22.x releases try to read these specific settings as
         // strings in addOverriddenOption() calls at startup, triggering
         // uncaught exceptions in UniValue::get_str(). These errors were fixed
-        // in later releases by https://github.com/bitcoin/bitcoin/pull/24498.
+        // in later releases by https://github.com/qogecoin/qogecoin/pull/24498.
         // If new numeric settings are added, they can be written as numbers
-        // instead of strings, because bitcoin 22.x will not try to read these.
+        // instead of strings, because qogecoin 22.x will not try to read these.
         node.updateRwSetting(SettingName(option), value.getValStr());
     } else {
         node.updateRwSetting(SettingName(option), value);
     }
 }
 
-//! Convert enabled/size values to bitcoin -prune setting.
+//! Convert enabled/size values to qogecoin -prune setting.
 static util::SettingsValue PruneSetting(bool prune_enabled, int prune_size_gb)
 {
     assert(!prune_enabled || prune_size_gb >= 1); // PruneSizeGB and ParsePruneSizeGB never return less
     return prune_enabled ? PruneGBtoMiB(prune_size_gb) : 0;
 }
 
-//! Get pruning enabled value to show in GUI from bitcoin -prune setting.
+//! Get pruning enabled value to show in GUI from qogecoin -prune setting.
 static bool PruneEnabled(const util::SettingsValue& prune_setting)
 {
     // -prune=1 setting is manual pruning mode, so disabled for purposes of the gui
     return SettingToInt(prune_setting, 0) > 1;
 }
 
-//! Get pruning size value to show in GUI from bitcoin -prune setting. If
+//! Get pruning size value to show in GUI from qogecoin -prune setting. If
 //! pruning is not enabled, just show default recommended pruning size (2GB).
 static int PruneSizeGB(const util::SettingsValue& prune_setting)
 {
@@ -326,7 +326,7 @@ void OptionsModel::SetPruneTargetGB(int prune_target_gb)
     node().forceSetting("prune", new_value);
 
     // Update settings.json if value configured in intro screen is different
-    // from saved value. Avoid writing settings.json if bitcoin.conf value
+    // from saved value. Avoid writing settings.json if qogecoin.conf value
     // doesn't need to be overridden.
     if (PruneEnabled(cur_value) != PruneEnabled(new_value) ||
         PruneSizeGB(cur_value) != PruneSizeGB(new_value)) {
@@ -412,7 +412,7 @@ QVariant OptionsModel::getOption(OptionID option) const
         return m_sub_fee_from_amount;
 #endif
     case DisplayUnit:
-        return QVariant::fromValue(m_display_bitcoin_unit);
+        return QVariant::fromValue(m_display_qogecoin_unit);
     case ThirdPartyTxUrls:
         return strThirdPartyTxUrls;
     case Language:
@@ -712,6 +712,6 @@ void OptionsModel::checkAndMigrate()
     // parameter interaction code to update other settings. This is particularly
     // important for the -listen setting, which should cause -listenonion, -upnp,
     // and other settings to default to false if it was set to false.
-    // (https://github.com/bitcoin-core/gui/issues/567).
+    // (https://github.com/qogecoin-core/gui/issues/567).
     node().initParameterInteraction();
 }

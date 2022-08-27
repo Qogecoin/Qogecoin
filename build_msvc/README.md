@@ -60,7 +60,7 @@ python build_msvc\msvc-autogen.py
 3. To build from the command-line with the Visual Studio toolchain use:
 
 ```cmd
-msbuild build_msvc\bitcoin.sln -property:Configuration=Release -maxCpuCount -verbosity:minimal
+msbuild build_msvc\qogecoin.sln -property:Configuration=Release -maxCpuCount -verbosity:minimal
 ```
 
 Alternatively, open the `build_msvc/qogecoin.sln` file in Visual Studio.

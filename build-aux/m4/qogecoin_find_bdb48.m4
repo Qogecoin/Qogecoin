@@ -1,4 +1,4 @@
-dnl Copyright (c) 2013-2015 The Bitcoin and Qogecoin Core Authors
+dnl Copyright (c) 2013-2015 The Qogecoin and Qogecoin Core Authors
 dnl Distributed under the MIT software license, see the accompanying
 dnl file COPYING or http://www.opensource.org/licenses/mit-license.php.
 

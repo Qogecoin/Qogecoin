@@ -625,7 +625,7 @@ inspecting signatures in Mach-O binaries.")
                  osslsigncode))
           ((string-contains target "-linux-")
            (list (cond ((string-contains target "riscv64-")
-                        (make-bitcoin-cross-toolchain target
+                        (make-qogecoin-cross-toolchain target
                                                       #:base-libc (make-glibc-with-stack-protector
                                                         (make-glibc-with-bind-now (make-glibc-without-werror glibc-2.27/qogecoin-patched)))))
                        (else

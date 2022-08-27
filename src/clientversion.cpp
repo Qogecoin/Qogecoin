@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 The Bitcoin and Qogecoin Core Authors
+// Copyright (c) 2012-2021 The Qogecoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -84,7 +84,7 @@ std::string CopyrightHolders(const std::string& strPrefix)
 
     // Make sure Qogecoin Core copyright is not removed by accident
     if (copyright_devs.find("Qogecoin Core") == std::string::npos) {
-        strCopyrightHolders += "\n" + strPrefix + "The Bitcoin and Qogecoin Core Authors";
+        strCopyrightHolders += "\n" + strPrefix + "The Qogecoin and Qogecoin Core Authors";
     }
     return strCopyrightHolders;
 }

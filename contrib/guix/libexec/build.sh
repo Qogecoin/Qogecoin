@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2019-2021 The Bitcoin and Qogecoin Core Authors
+# Copyright (c) 2019-2021 The Qogecoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 export LC_ALL=C
@@ -365,9 +365,9 @@ mkdir -p "$DISTSRC"
                 ;;
         esac
 
-        # copy over the example bitcoin.conf file. if contrib/devtools/gen-bitcoin-conf.sh
+        # copy over the example qogecoin.conf file. if contrib/devtools/gen-qogecoin-conf.sh
         # has not been run before buildling, this file will be a stub
-        cp "${DISTSRC}/share/examples/bitcoin.conf" "${DISTNAME}/"
+        cp "${DISTSRC}/share/examples/qogecoin.conf" "${DISTNAME}/"
 
         cp -r "${DISTSRC}/share/rpcauth" "${DISTNAME}/share/"
 

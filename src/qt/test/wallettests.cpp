@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2021 The Bitcoin and Qogecoin Core Authors
+// Copyright (c) 2015-2021 The Qogecoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -131,8 +131,8 @@ void BumpFee(TransactionView& view, const uint256& txid, bool expectDisabled, st
 
 void CompareBalance(WalletModel& walletModel, CAmount expected_balance, QLabel* balance_label_to_check)
 {
-    BitcoinUnit unit = walletModel.getOptionsModel()->getDisplayUnit();
-    QString balanceComparison = BitcoinUnits::formatWithUnit(unit, expected_balance, false, BitcoinUnits::SeparatorStyle::ALWAYS);
+    QogecoinUnit unit = walletModel.getOptionsModel()->getDisplayUnit();
+    QString balanceComparison = QogecoinUnits::formatWithUnit(unit, expected_balance, false, QogecoinUnits::SeparatorStyle::ALWAYS);
     QCOMPARE(balance_label_to_check->text().trimmed(), balanceComparison);
 }
 
