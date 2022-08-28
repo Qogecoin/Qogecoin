@@ -150,7 +150,7 @@ public:
     }
 
 private:
-    QogecoinUnit currentUnit{QogecoinUnit::Qoge};
+    QogecoinUnit currentUnit{QogecoinUnit::QOGE};
     CAmount singleStep{CAmount(100000)}; // satoshis
     mutable QSize cachedMinimumSizeHint;
     bool m_allow_empty{true};

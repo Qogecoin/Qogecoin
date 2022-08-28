@@ -176,7 +176,7 @@ bool parseQogecoinURI(const QUrl &uri, SendCoinsRecipient *out)
         {
             if(!i->second.isEmpty())
             {
-                if (!QogecoinUnits::parse(QogecoinUnit::Qoge, i->second, &rv.amount)) {
+                if (!QogecoinUnits::parse(QogecoinUnit::QOGE, i->second, &rv.amount)) {
                     return false;
                 }
             }
@@ -208,7 +208,7 @@ QString formatQogecoinURI(const SendCoinsRecipient &info)
 
     if (info.amount)
     {
-        ret += QString("?amount=%1").arg(QogecoinUnits::format(QogecoinUnit::Qoge, info.amount, false, QogecoinUnits::SeparatorStyle::NEVER));
+        ret += QString("?amount=%1").arg(QogecoinUnits::format(QogecoinUnit::QOGE, info.amount, false, QogecoinUnits::SeparatorStyle::NEVER));
         paramCount++;
     }
 
