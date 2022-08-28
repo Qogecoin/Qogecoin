@@ -14,7 +14,6 @@
 
 #include <univalue.h>
 
-<<<<<<< HEAD
 #include <fstream>
 
 OptionTests::OptionTests(interfaces::Node& node) : m_node(node)
