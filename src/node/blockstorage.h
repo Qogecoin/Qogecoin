@@ -1,13 +1,14 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_NODE_BLOCKSTORAGE_H
 #define QOGECOIN_NODE_BLOCKSTORAGE_H
 
+#include <attributes.h>
 #include <chain.h>
 #include <fs.h>
-#include <protocol.h> // For CMessageHeader::MessageStartChars
+#include <protocol.h>
 #include <sync.h>
 #include <txdb.h>
 
@@ -178,6 +179,9 @@ public:
     //! Returns last CBlockIndex* that is a checkpoint
     const CBlockIndex* GetLastCheckpoint(const CCheckpointData& data) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
+    //! Find the first block that is not pruned
+    const CBlockIndex* GetFirstStoredBlock(const CBlockIndex& start_block LIFETIMEBOUND) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+
     /** True if any block files have ever been pruned. */
     bool m_have_pruned = false;
 
@@ -187,9 +191,6 @@ public:
     //! Create or update a prune lock identified by its name
     void UpdatePruneLock(const std::string& name, const PruneLockInfo& lock_info) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 };
-
-//! Find the first block that is not pruned
-const CBlockIndex* GetFirstStoredBlock(const CBlockIndex* start_block) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
 void CleanupBlockRevFiles();
 
