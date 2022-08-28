@@ -662,7 +662,6 @@ libqogecoin_common_a_SOURCES = \
 libqogecoin_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(QOGECOIN_INCLUDES)
 libqogecoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libqogecoin_util_a_SOURCES = \
-=======
   support/lockedpool.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
