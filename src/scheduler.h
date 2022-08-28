@@ -5,13 +5,18 @@
 #ifndef QOGECOIN_SCHEDULER_H
 #define QOGECOIN_SCHEDULER_H
 
+#include <attributes.h>
+#include <sync.h>
+#include <threadsafety.h>
+
+#include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <functional>
 #include <list>
 #include <map>
 #include <thread>
-
-#include <sync.h>
+#include <utility>
 
 /**
  * Simple class for background tasks that should be run
@@ -109,7 +114,7 @@ private:
  * Class used by CScheduler clients which may schedule multiple jobs
  * which are required to be run serially. Jobs may not be run on the
  * same thread, but no two jobs will be executed
- * at the same time and memory will be release-acquire consistent
+ * at the same timeand memory will be release-acquire consistent
  * (the scheduler will internally do an acquire before invoking a callback
  * as well as a release at the end). In practice this means that a callback
  * B() will be able to observe all of the effects of callback A() which executed
@@ -118,7 +123,7 @@ private:
 class SingleThreadedSchedulerClient
 {
 private:
-    CScheduler* m_pscheduler;
+    CScheduler& m_scheduler;
 
     Mutex m_callbacks_mutex;
     std::list<std::function<void()>> m_callbacks_pending GUARDED_BY(m_callbacks_mutex);
@@ -128,7 +133,7 @@ private:
     void ProcessQueue() EXCLUSIVE_LOCKS_REQUIRED(!m_callbacks_mutex);
 
 public:
-    explicit SingleThreadedSchedulerClient(CScheduler* pschedulerIn) : m_pscheduler(pschedulerIn) {}
+    explicit SingleThreadedSchedulerClient(CScheduler& scheduler LIFETIMEBOUND) : m_scheduler{scheduler} {}
 
     /**
      * Add a callback to be executed. Callbacks are executed serially
@@ -145,6 +150,5 @@ public:
     void EmptyQueue() EXCLUSIVE_LOCKS_REQUIRED(!m_callbacks_mutex);
 
     size_t CallbacksPending() EXCLUSIVE_LOCKS_REQUIRED(!m_callbacks_mutex);
-};
-
+}; 
 #endif // QOGECOIN_SCHEDULER_H
