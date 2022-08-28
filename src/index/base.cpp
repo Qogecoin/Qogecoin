@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -95,7 +95,7 @@ bool BaseIndex::Init()
         if (!m_best_block_index) {
             // index is not built yet
             // make sure we have all block data back to the genesis
-            prune_violation = node::GetFirstStoredBlock(active_chain.Tip()) != active_chain.Genesis();
+            prune_violation = m_chainstate->m_blockman.GetFirstStoredBlock(*active_chain.Tip()) != active_chain.Genesis();
         }
         // in case the index has a best block set and is not fully synced
         // check if we have the required blocks to continue building the index
@@ -374,7 +374,7 @@ void BaseIndex::Interrupt()
 bool BaseIndex::Start()
 {
     // m_chainstate member gives indexing code access to node internals. It is
-    // removed in followup https://github.com/qogecoin/qogecoin/pull/24230
+    // removed in followup https://github.com/bitcoin/bitcoin/pull/24230
     m_chainstate = &m_chain->context()->chainman->ActiveChainstate();
     // Need to register this ValidationInterface before running Init(), so that
     // callbacks are not missed if Init sets m_synced to true.
