@@ -166,13 +166,13 @@ bool OptionsModel::Init(bilingual_str& error)
 
     // Display
     if (!settings.contains("DisplayQogecoinUnit")) {
-        settings.setValue("DisplayQogecoinUnit", QVariant::fromValue(QogecoinUnit::Qoge));
+        settings.setValue("DisplayQogecoinUnit", QVariant::fromValue(QogecoinUnit::QOGE));
     }
     QVariant unit = settings.value("DisplayQogecoinUnit");
     if (unit.canConvert<QogecoinUnit>()) {
         m_display_qogecoin_unit = unit.value<QogecoinUnit>();
     } else {
-        m_display_qogecoin_unit = QogecoinUnit::Qoge;
+        m_display_qogecoin_unit = QogecoinUnit::QOGE;
         settings.setValue("DisplayQogecoinUnit", QVariant::fromValue(m_display_qogecoin_unit));
     }
 
