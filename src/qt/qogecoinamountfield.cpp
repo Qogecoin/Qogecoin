@@ -125,7 +125,7 @@ public:
 
             const QFontMetrics fm(fontMetrics());
             int h = lineEdit()->minimumSizeHint().height();
-            int w = GUIUtil::TextWidth(fm, QogecoinUnits::format(QogecoinUnit::Qoge, QogecoinUnits::maxMoney(), false, QogecoinUnits::SeparatorStyle::ALWAYS));
+            int w = GUIUtil::TextWidth(fm, QogecoinUnits::format(QogecoinUnit::QOGE, QogecoinUnits::maxMoney(), false, QogecoinUnits::SeparatorStyle::ALWAYS));
             w += 2; // cursor blinking space
 
             QStyleOptionSpinBox opt;

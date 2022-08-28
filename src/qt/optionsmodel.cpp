@@ -421,7 +421,7 @@ QVariant OptionsModel::getOption(OptionID option) const
         return m_use_embedded_monospaced_font;
     case CoinControlFeatures:
         return fCoinControlFeatures;
-    case EnablePSQOGEontrols:
+    case EnablePSQogeontrols:
         return settings.value("enable_psbt_controls");
     case Prune:
         return PruneEnabled(setting());
@@ -574,7 +574,7 @@ bool OptionsModel::setOption(OptionID option, const QVariant& value)
         settings.setValue("fCoinControlFeatures", fCoinControlFeatures);
         Q_EMIT coinControlFeaturesChanged(fCoinControlFeatures);
         break;
-    case EnablePSQOGEontrols:
+    case EnablePSQogeontrols:
         m_enable_psbt_controls = value.toBool();
         settings.setValue("enable_psbt_controls", m_enable_psbt_controls);
         break;

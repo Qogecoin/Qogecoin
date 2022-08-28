@@ -507,7 +507,7 @@ void CoinControlDialog::updateLabels(CCoinControl& m_coin_control, WalletModel *
     }
 
     // actually update labels
-    QogecoinUnit nDisplayUnit = QogecoinUnit::Qoge;
+    QogecoinUnit nDisplayUnit = QogecoinUnit::QOGE;
     if (model && model->getOptionsModel())
         nDisplayUnit = model->getOptionsModel()->getDisplayUnit();
 

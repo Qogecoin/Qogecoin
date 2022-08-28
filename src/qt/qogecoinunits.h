@@ -40,9 +40,9 @@ public:
       @note Source: https://en.qogecoin.it/wiki/Units . Please add only sensible ones
      */
     enum class Unit {
-        Qoge,
-        mQoge,
-        uQoge,
+        QOGE,
+        mQOGE,
+        uQOGE,
         SAT
     };
     Q_ENUM(Unit)
