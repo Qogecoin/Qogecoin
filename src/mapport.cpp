@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,7 +19,7 @@
 #include <util/thread.h>
 
 #ifdef USE_NATPMP
-#include <compat/compat.h>
+#include <compat.h>
 #include <natpmp.h>
 #endif // USE_NATPMP
 

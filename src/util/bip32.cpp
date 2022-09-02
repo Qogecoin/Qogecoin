@@ -1,15 +1,12 @@
-// Copyright (c) 2019-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <sstream>
+#include <stdio.h>
 #include <tinyformat.h>
 #include <util/bip32.h>
 #include <util/strencodings.h>
-
-#include <algorithm>
-#include <cstdint>
-#include <cstdio>
-#include <sstream>
 
 
 bool ParseHDKeypath(const std::string& keypath_str, std::vector<uint32_t>& keypath)

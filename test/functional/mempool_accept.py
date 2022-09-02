@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test mempool acceptance of raw transactions."""
@@ -11,7 +11,7 @@ import math
 from test_framework.test_framework import QogecoinTestFramework
 from test_framework.key import ECKey
 from test_framework.messages import (
-    MAX_BIP125_RBF_SEQUENCE,
+    BIP125_SEQUENCE_NUMBER,
     COIN,
     COutPoint,
     CTxIn,
@@ -76,7 +76,7 @@ class MempoolAcceptanceTest(QogecoinTestFramework):
         tx.vout[0].nValue = int(0.3 * COIN)
         tx.vout[1].nValue = int(49 * COIN)
         raw_tx_in_block = tx.serialize().hex()
-        txid_in_block = self.wallet.sendrawtransaction(from_node=node, tx_hex=raw_tx_in_block)
+        txid_in_block = self.wallet.sendrawtransaction(from_node=node, tx_hex=raw_tx_in_block, maxfeerate=0)
         self.generate(node, 1)
         self.mempool_size = 0
         self.check_mempool_result(
@@ -87,6 +87,7 @@ class MempoolAcceptanceTest(QogecoinTestFramework):
         self.log.info('A transaction not in the mempool')
         fee = Decimal('0.000007')
         utxo_to_spend = self.wallet.get_utxo(txid=txid_in_block)  # use 0.3 Qoge UTXO
+        tx = self.wallet.create_self_transfer(utxo_to_spend=utxo_to_spend, sequence=BIP125_SEQUENCE_NUMBER)['tx']
         tx.vout[0].nValue = int((Decimal('0.3') - fee) * COIN)
         raw_tx_0 = tx.serialize().hex()
         txid_0 = tx.rehash()
@@ -124,7 +125,7 @@ class MempoolAcceptanceTest(QogecoinTestFramework):
         self.log.info('A transaction that replaces a mempool transaction')
         tx = tx_from_hex(raw_tx_0)
         tx.vout[0].nValue -= int(fee * COIN)  # Double the fee
-        tx.vin[0].nSequence = MAX_BIP125_RBF_SEQUENCE + 1  # Now, opt out of RBF
+        tx.vin[0].nSequence = BIP125_SEQUENCE_NUMBER + 1  # Now, opt out of RBF
         raw_tx_0 = tx.serialize().hex()
         txid_0 = tx.rehash()
         self.check_mempool_result(
@@ -165,7 +166,7 @@ class MempoolAcceptanceTest(QogecoinTestFramework):
         tx.vin[1].prevout = COutPoint(hash=int(txid_1, 16), n=0)
         tx.vout[0].nValue = int(0.1 * COIN)
         raw_tx_spend_both = tx.serialize().hex()
-        txid_spend_both = self.wallet.sendrawtransaction(from_node=node, tx_hex=raw_tx_spend_both)
+        txid_spend_both = self.wallet.sendrawtransaction(from_node=node, tx_hex=raw_tx_spend_both, maxfeerate=0)
         self.generate(node, 1)
         self.mempool_size = 0
         # Now see if we can add the coins back to the utxo set by sending the exact txs again

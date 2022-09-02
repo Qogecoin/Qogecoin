@@ -1,20 +1,18 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <span.h>
 #include <util/strencodings.h>
+#include <util/string.h>
+
+#include <tinyformat.h>
 
 #include <algorithm>
-#include <array>
-#include <cassert>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
 #include <optional>
-#include <ostream>
-#include <string>
-#include <vector>
 
 static const std::string CHARS_ALPHA_NUM = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
@@ -78,10 +76,10 @@ bool IsHexNumber(std::string_view str)
     return str.size() > 0;
 }
 
-template <typename Byte>
-std::vector<Byte> ParseHex(std::string_view str)
+std::vector<unsigned char> ParseHex(std::string_view str)
 {
-    std::vector<Byte> vch;
+    // convert hex dump to vector
+    std::vector<unsigned char> vch;
     auto it = str.begin();
     while (it != str.end() && it + 1 != str.end()) {
         if (IsSpace(*it)) {
@@ -91,12 +89,10 @@ std::vector<Byte> ParseHex(std::string_view str)
         auto c1 = HexDigit(*(it++));
         auto c2 = HexDigit(*(it++));
         if (c1 < 0 || c2 < 0) break;
-        vch.push_back(Byte(c1 << 4) | Byte(c2));
+        vch.push_back(uint8_t(c1 << 4) | c2);
     }
     return vch;
 }
-template std::vector<std::byte> ParseHex(std::string_view);
-template std::vector<uint8_t> ParseHex(std::string_view);
 
 void SplitHostPort(std::string_view in, uint16_t& portOut, std::string& hostOut)
 {
@@ -456,37 +452,17 @@ std::string Capitalize(std::string str)
     return str;
 }
 
-namespace {
-
-using ByteAsHex = std::array<char, 2>;
-
-constexpr std::array<ByteAsHex, 256> CreateByteToHexMap()
-{
-    constexpr char hexmap[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
-
-    std::array<ByteAsHex, 256> byte_to_hex{};
-    for (size_t i = 0; i < byte_to_hex.size(); ++i) {
-        byte_to_hex[i][0] = hexmap[i >> 4];
-        byte_to_hex[i][1] = hexmap[i & 15];
-    }
-    return byte_to_hex;
-}
-
-} // namespace
-
 std::string HexStr(const Span<const uint8_t> s)
 {
     std::string rv(s.size() * 2, '\0');
-    static constexpr auto byte_to_hex = CreateByteToHexMap();
-    static_assert(sizeof(byte_to_hex) == 512);
-
-    char* it = rv.data();
+    static constexpr char hexmap[16] = { '0', '1', '2', '3', '4', '5', '6', '7',
+                                         '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' };
+    auto it = rv.begin();
     for (uint8_t v : s) {
-        std::memcpy(it, byte_to_hex[v].data(), 2);
-        it += 2;
+        *it++ = hexmap[v >> 4];
+        *it++ = hexmap[v & 15];
     }
-
-    assert(it == rv.data() + rv.size());
+    assert(it == rv.end());
     return rv;
 }
 

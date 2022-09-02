@@ -1,11 +1,11 @@
-// Copyright (c) 2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_UTIL_SERFLOAT_H
 #define QOGECOIN_UTIL_SERFLOAT_H
 
-#include <cstdint>
+#include <stdint.h>
 
 /* Encode a double using the IEEE 754 binary64 format. All NaNs are encoded as x86/ARM's
  * positive quiet NaN with payload 0. */

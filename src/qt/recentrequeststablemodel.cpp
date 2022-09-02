@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -34,7 +34,10 @@ RecentRequestsTableModel::RecentRequestsTableModel(WalletModel *parent) :
     connect(walletModel->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &RecentRequestsTableModel::updateDisplayUnit);
 }
 
-RecentRequestsTableModel::~RecentRequestsTableModel() = default;
+RecentRequestsTableModel::~RecentRequestsTableModel()
+{
+    /* Intentionally left empty */
+}
 
 int RecentRequestsTableModel::rowCount(const QModelIndex &parent) const
 {

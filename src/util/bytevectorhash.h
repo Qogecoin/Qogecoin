@@ -1,12 +1,11 @@
-// Copyright (c) 2018 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2018 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_UTIL_BYTEVECTORHASH_H
 #define QOGECOIN_UTIL_BYTEVECTORHASH_H
 
-#include <cstdint>
-#include <cstddef>
+#include <stdint.h>
 #include <vector>
 
 /**

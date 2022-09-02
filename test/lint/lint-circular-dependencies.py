@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2020-2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2020-2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -15,6 +15,7 @@ import sys
 EXPECTED_CIRCULAR_DEPENDENCIES = (
     "chainparamsbase -> util/system -> chainparamsbase",
     "node/blockstorage -> validation -> node/blockstorage",
+    "index/coinstatsindex -> node/coinstats -> index/coinstatsindex",
     "policy/fees -> txmempool -> policy/fees",
     "qt/addresstablemodel -> qt/walletmodel -> qt/addresstablemodel",
     "qt/recentrequeststablemodel -> qt/walletmodel -> qt/recentrequeststablemodel",
@@ -22,11 +23,7 @@ EXPECTED_CIRCULAR_DEPENDENCIES = (
     "qt/transactiontablemodel -> qt/walletmodel -> qt/transactiontablemodel",
     "wallet/fees -> wallet/wallet -> wallet/fees",
     "wallet/wallet -> wallet/walletdb -> wallet/wallet",
-    "kernel/coinstats -> validation -> kernel/coinstats",
-    "kernel/mempool_persist -> validation -> kernel/mempool_persist",
-
-    # Temporary, removed in followup https://github.com/qogecoin/qogecoin/pull/24230
-    "index/base -> node/context -> net_processing -> index/blockfilterindex -> index/base",
+    "node/coinstats -> validation -> node/coinstats",
 )
 
 CODE_DIR = "src"

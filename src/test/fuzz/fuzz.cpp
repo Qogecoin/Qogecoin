@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -194,7 +194,7 @@ int main(int argc, char** argv)
         return 0;
     }
     std::signal(SIGABRT, signal_handler);
-    const auto start_time{Now<SteadySeconds>()};
+    int64_t start_time = GetTimeSeconds();
     int tested = 0;
     for (int i = 1; i < argc; ++i) {
         fs::path input_path(*(argv + i));
@@ -215,8 +215,8 @@ int main(int argc, char** argv)
             buffer.clear();
         }
     }
-    const auto end_time{Now<SteadySeconds>()};
-    std::cout << g_fuzz_target << ": succeeded against " << tested << " files in " << count_seconds(end_time - start_time) << "s." << std::endl;
+    int64_t end_time = GetTimeSeconds();
+    std::cout << g_fuzz_target << ": succeeded against " << tested << " files in " << (end_time - start_time) << "s." << std::endl;
 #endif
     return 0;
 }

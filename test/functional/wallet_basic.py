@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the wallet."""
@@ -7,7 +7,6 @@ from decimal import Decimal
 from itertools import product
 
 from test_framework.blocktools import COINBASE_MATURITY
-from test_framework.descriptors import descsum_create
 from test_framework.test_framework import QogecoinTestFramework
 from test_framework.util import (
     assert_array_result,
@@ -26,7 +25,7 @@ class WalletTest(QogecoinTestFramework):
     def set_test_params(self):
         self.num_nodes = 4
         self.extra_args = [[
-            "-dustrelayfee=0", "-walletrejectlongchains=0"
+            "-acceptnonstdtxn=1", "-walletrejectlongchains=0"
         ]] * self.num_nodes
         self.setup_clean_chain = True
         self.supports_cli = False
@@ -415,7 +414,7 @@ class WalletTest(QogecoinTestFramework):
         assert_raises_rpc_error(-3, "Invalid amount", self.nodes[0].sendtoaddress, self.nodes[2].getnewaddress(), "1f-4")
 
         # This will raise an exception since generate does not accept a string
-        assert_raises_rpc_error(-1, "not of expected type number", self.generate, self.nodes[0], "2")
+        assert_raises_rpc_error(-1, "not an integer", self.generate, self.nodes[0], "2")
 
         if not self.options.descriptors:
 
@@ -700,38 +699,6 @@ class WalletTest(QogecoinTestFramework):
         assert_equal(self.nodes[2].gettransaction(txid_feeReason_three)['txid'], txid_feeReason_three)
         txid_feeReason_four = self.nodes[2].sendmany(dummy='', amounts={address: 5}, verbose=False)
         assert_equal(self.nodes[2].gettransaction(txid_feeReason_four)['txid'], txid_feeReason_four)
-
-        self.log.info("Testing 'listunspent' outputs the parent descriptor(s) of coins")
-        # Create two multisig descriptors, and send a UTxO each.
-        multi_a = descsum_create("wsh(multi(1,tpubD6NzVbkrYhZ4YBNjUo96Jxd1u4XKWgnoc7LsA1jz3Yc2NiDbhtfBhaBtemB73n9V5vtJHwU6FVXwggTbeoJWQ1rzdz8ysDuQkpnaHyvnvzR/*,tpubD6NzVbkrYhZ4YHdDGMAYGaWxMSC1B6tPRTHuU5t3BcfcS3nrF523iFm5waFd1pP3ZvJt4Jr8XmCmsTBNx5suhcSgtzpGjGMASR3tau1hJz4/*))")
-        multi_b = descsum_create("wsh(multi(1,tpubD6NzVbkrYhZ4YHdDGMAYGaWxMSC1B6tPRTHuU5t3BcfcS3nrF523iFm5waFd1pP3ZvJt4Jr8XmCmsTBNx5suhcSgtzpGjGMASR3tau1hJz4/*,tpubD6NzVbkrYhZ4Y2RLiuEzNQkntjmsLpPYDm3LTRBYynUQtDtpzeUKAcb9sYthSFL3YR74cdFgF5mW8yKxv2W2CWuZDFR2dUpE5PF9kbrVXNZ/*))")
-        addr_a = self.nodes[0].deriveaddresses(multi_a, 0)[0]
-        addr_b = self.nodes[0].deriveaddresses(multi_b, 0)[0]
-        txid_a = self.nodes[0].sendtoaddress(addr_a, 0.01)
-        txid_b = self.nodes[0].sendtoaddress(addr_b, 0.01)
-        self.generate(self.nodes[0], 1, sync_fun=self.no_op)
-        # Now import the descriptors, make sure we can identify on which descriptor each coin was received.
-        self.nodes[0].createwallet(wallet_name="wo", descriptors=True, disable_private_keys=True)
-        wo_wallet = self.nodes[0].get_wallet_rpc("wo")
-        wo_wallet.importdescriptors([
-            {
-                "desc": multi_a,
-                "active": False,
-                "timestamp": "now",
-            },
-            {
-                "desc": multi_b,
-                "active": False,
-                "timestamp": "now",
-            },
-        ])
-        coins = wo_wallet.listunspent(minconf=0)
-        assert_equal(len(coins), 2)
-        coin_a = next(c for c in coins if c["txid"] == txid_a)
-        assert_equal(coin_a["parent_descs"][0], multi_a)
-        coin_b = next(c for c in coins if c["txid"] == txid_b)
-        assert_equal(coin_b["parent_descs"][0], multi_b)
-        self.nodes[0].unloadwallet("wo")
 
 
 if __name__ == '__main__':

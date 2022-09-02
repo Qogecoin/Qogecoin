@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,7 +12,6 @@
 #include <util/check.h>
 #include <util/strencodings.h>
 #include <util/string.h>
-#include <util/system.h>
 #include <util/translation.h>
 
 #include <tuple>
@@ -98,7 +97,7 @@ CAmount AmountFromValue(const UniValue& value, int decimals)
 
 uint256 ParseHashV(const UniValue& v, std::string strName)
 {
-    const std::string& strHex(v.get_str());
+    std::string strHex(v.get_str());
     if (64 != strHex.length())
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("%s must be of length %d (not %d, for '%s')", strName, 64, strHex.length(), strHex));
     if (!IsHex(strHex)) // Note: IsHex("") is false
@@ -268,7 +267,7 @@ CTxDestination AddAndGetMultisigDestination(const int required, const std::vecto
 class DescribeAddressVisitor
 {
 public:
-    explicit DescribeAddressVisitor() = default;
+    explicit DescribeAddressVisitor() {}
 
     UniValue operator()(const CNoDestination& dest) const
     {
@@ -338,7 +337,7 @@ UniValue DescribeAddress(const CTxDestination& dest)
 
 unsigned int ParseConfirmTarget(const UniValue& value, unsigned int max_target)
 {
-    const int target{value.getInt<int>()};
+    const int target{value.get_int()};
     const unsigned int unsigned_target{static_cast<unsigned int>(target)};
     if (target < 1 || unsigned_target > max_target) {
         throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("Invalid conf_target, must be between %u and %u", 1, max_target));
@@ -582,9 +581,7 @@ UniValue RPCHelpMan::HandleRequest(const JSONRPCRequest& request) const
         throw std::runtime_error(ToString());
     }
     const UniValue ret = m_fun(*this, request);
-    if (gArgs.GetBoolArg("-rpcdoccheck", DEFAULT_RPC_DOC_CHECK)) {
-        CHECK_NONFATAL(std::any_of(m_results.m_results.begin(), m_results.m_results.end(), [&ret](const RPCResult& res) { return res.MatchesType(ret); }));
-    }
+    CHECK_NONFATAL(std::any_of(m_results.m_results.begin(), m_results.m_results.end(), [ret](const RPCResult& res) { return res.MatchesType(ret); }));
     return ret;
 }
 
@@ -1026,11 +1023,11 @@ std::string RPCArg::ToString(const bool oneline) const
 static std::pair<int64_t, int64_t> ParseRange(const UniValue& value)
 {
     if (value.isNum()) {
-        return {0, value.getInt<int64_t>()};
+        return {0, value.get_int64()};
     }
     if (value.isArray() && value.size() == 2 && value[0].isNum() && value[1].isNum()) {
-        int64_t low = value[0].getInt<int64_t>();
-        int64_t high = value[1].getInt<int64_t>();
+        int64_t low = value[0].get_int64();
+        int64_t high = value[1].get_int64();
         if (low > high) throw JSONRPCError(RPC_INVALID_PARAMETER, "Range specified as [begin,end] must not have begin after end");
         return {low, high};
     }

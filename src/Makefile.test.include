@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2013-2016 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,7 +6,7 @@ if ENABLE_FUZZ_BINARY
 noinst_PROGRAMS += test/fuzz/fuzz
 endif
 
-if ENABLE_TESTS
+if !ENABLE_FUZZ
 bin_PROGRAMS += test/test_qogecoin
 endif
 
@@ -117,9 +117,7 @@ QOGECOIN_TESTS =\
   test/prevector_tests.cpp \
   test/raii_event_tests.cpp \
   test/random_tests.cpp \
-  test/rbf_tests.cpp \
   test/rest_tests.cpp \
-  test/result_tests.cpp \
   test/reverselock_tests.cpp \
   test/rpc_tests.cpp \
   test/sanity_tests.cpp \
@@ -162,7 +160,6 @@ QOGECOIN_TESTS =\
 
 if ENABLE_WALLET
 QOGECOIN_TESTS += \
-  wallet/test/feebumper_tests.cpp \
   wallet/test/psbt_wallet_tests.cpp \
   wallet/test/spend_tests.cpp \
   wallet/test/wallet_tests.cpp \
@@ -170,7 +167,6 @@ QOGECOIN_TESTS += \
   wallet/test/wallet_crypto_tests.cpp \
   wallet/test/wallet_transaction_tests.cpp \
   wallet/test/coinselector_tests.cpp \
-  wallet/test/availablecoins_tests.cpp \
   wallet/test/init_tests.cpp \
   wallet/test/ismine_tests.cpp \
   wallet/test/scriptpubkeyman_tests.cpp
@@ -205,7 +201,6 @@ test_test_qogecoin_CPPFLAGS = $(AM_CPPFLAGS) $(QOGECOIN_INCLUDES) $(TESTDEFS) $(
 test_test_qogecoin_LDADD = $(LIBTEST_UTIL)
 if ENABLE_WALLET
 test_test_qogecoin_LDADD += $(LIBQOGECOIN_WALLET)
-test_test_qogecoin_CPPFLAGS += $(BDB_CPPFLAGS)
 endif
 
 test_test_qogecoin_LDADD += $(LIBQOGECOIN_NODE) $(LIBQOGECOIN_CLI) $(LIBQOGECOIN_COMMON) $(LIBQOGECOIN_UTIL) $(LIBQOGECOIN_CONSENSUS) $(LIBQOGECOIN_CRYPTO) $(LIBUNIVALUE) \
@@ -274,7 +269,7 @@ test_fuzz_fuzz_SOURCES = \
  test/fuzz/locale.cpp \
  test/fuzz/merkleblock.cpp \
  test/fuzz/message.cpp \
- test/fuzz/miniscript.cpp \
+ test/fuzz/miniscript_decode.cpp \
  test/fuzz/minisketch.cpp \
  test/fuzz/muhash.cpp \
  test/fuzz/multiplication_overflow.cpp \
@@ -329,7 +324,6 @@ test_fuzz_fuzz_SOURCES = \
  test/fuzz/tx_in.cpp \
  test/fuzz/tx_out.cpp \
  test/fuzz/tx_pool.cpp \
- test/fuzz/txorphan.cpp \
  test/fuzz/txrequest.cpp \
  test/fuzz/utxo_snapshot.cpp \
  test/fuzz/validation_load_mempool.cpp \
@@ -340,7 +334,7 @@ nodist_test_test_qogecoin_SOURCES = $(GENERATED_TEST_FILES)
 
 $(QOGECOIN_TESTS): $(GENERATED_TEST_FILES)
 
-CLEAN_QOGECOIN_TEST = test/*.gcda test/*.gcno test/fuzz/*.gcda test/fuzz/*.gcno test/util/*.gcda test/util/*.gcno $(GENERATED_TEST_FILES) $(addsuffix .log,$(basename $(QOGECOIN_TESTS)))
+CLEAN_QOGECOIN_TEST = test/*.gcda test/*.gcno test/fuzz/*.gcda test/fuzz/*.gcno test/util/*.gcda test/util/*.gcno $(GENERATED_TEST_FILES) $(QOGECOIN_TESTS:=.log)
 
 CLEANFILES += $(CLEAN_QOGECOIN_TEST)
 
@@ -370,14 +364,14 @@ endif
 if TARGET_WINDOWS
 else
 if ENABLE_BENCH
-	@echo "Running bench/bench_qogecoin (one iteration sanity check)..."
-	$(BENCH_BINARY) --sanity-check > /dev/null
+	@echo "Running bench/bench_qogecoin ..."
+	$(BENCH_BINARY) > /dev/null
 endif
 endif
 	$(AM_V_at)$(MAKE) $(AM_MAKEFLAGS) -C secp256k1 check
 
-if ENABLE_TESTS
-UNIVALUE_TESTS = univalue/test/object univalue/test/unitester
+if !ENABLE_FUZZ
+UNIVALUE_TESTS = univalue/test/object univalue/test/unitester univalue/test/no_nul
 noinst_PROGRAMS += $(UNIVALUE_TESTS)
 TESTS += $(UNIVALUE_TESTS)
 
@@ -385,6 +379,11 @@ univalue_test_unitester_SOURCES = $(UNIVALUE_TEST_UNITESTER_INT)
 univalue_test_unitester_LDADD = $(LIBUNIVALUE)
 univalue_test_unitester_CPPFLAGS = -I$(srcdir)/$(UNIVALUE_INCLUDE_DIR_INT) -DJSON_TEST_SRC=\"$(srcdir)/$(UNIVALUE_TEST_DATA_DIR_INT)\"
 univalue_test_unitester_LDFLAGS = -static $(LIBTOOL_APP_LDFLAGS)
+
+univalue_test_no_nul_SOURCES = $(UNIVALUE_TEST_NO_NUL_INT)
+univalue_test_no_nul_LDADD = $(LIBUNIVALUE)
+univalue_test_no_nul_CPPFLAGS = -I$(srcdir)/$(UNIVALUE_INCLUDE_DIR_INT)
+univalue_test_no_nul_LDFLAGS = -static $(LIBTOOL_APP_LDFLAGS)
 
 univalue_test_object_SOURCES = $(UNIVALUE_TEST_OBJECT_INT)
 univalue_test_object_LDADD = $(LIBUNIVALUE)
@@ -414,5 +413,14 @@ endif
 	 echo "static unsigned const char $(*F)[] = {" && \
 	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
 	 echo "};};"; \
+	} > "$@.new" && mv -f "$@.new" "$@"
+	@echo "Generated $@"
+
+%.raw.h: %.raw
+	@$(MKDIR_P) $(@D)
+	@{ \
+	 echo "static unsigned const char $(*F)_raw[] = {" && \
+	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
+	 echo "};"; \
 	} > "$@.new" && mv -f "$@.new" "$@"
 	@echo "Generated $@"

@@ -1,11 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_HASH_H
 #define QOGECOIN_HASH_H
 
+#include <attributes.h>
 #include <crypto/common.h>
 #include <crypto/ripemd160.h>
 #include <crypto/sha256.h>
@@ -96,12 +97,20 @@ inline uint160 Hash160(const T1& in1)
 }
 
 /** A writer stream (for serialization) that computes a 256-bit hash. */
-class HashWriter
+class CHashWriter
 {
 private:
     CSHA256 ctx;
 
+    const int nType;
+    const int nVersion;
 public:
+
+    CHashWriter(int nTypeIn, int nVersionIn) : nType(nTypeIn), nVersion(nVersionIn) {}
+
+    int GetType() const { return nType; }
+    int GetVersion() const { return nVersion; }
+
     void write(Span<const std::byte> src)
     {
         ctx.Write(UCharCast(src.data()), src.size());
@@ -135,26 +144,6 @@ public:
         uint256 result = GetHash();
         return ReadLE64(result.begin());
     }
-
-    template <typename T>
-    HashWriter& operator<<(const T& obj)
-    {
-        ::Serialize(*this, obj);
-        return *this;
-    }
-};
-
-class CHashWriter : public HashWriter
-{
-private:
-    const int nType;
-    const int nVersion;
-
-public:
-    CHashWriter(int nTypeIn, int nVersionIn) : nType(nTypeIn), nVersion(nVersionIn) {}
-
-    int GetType() const { return nType; }
-    int GetVersion() const { return nVersion; }
 
     template<typename T>
     CHashWriter& operator<<(const T& obj) {
@@ -215,12 +204,12 @@ unsigned int MurmurHash3(unsigned int nHashSeed, Span<const unsigned char> vData
 
 void BIP32Hash(const ChainCode &chainCode, unsigned int nChild, unsigned char header, const unsigned char data[32], unsigned char output[64]);
 
-/** Return a HashWriter primed for tagged hashes (as specified in BIP 340).
+/** Return a CHashWriter primed for tagged hashes (as specified in BIP 340).
  *
  * The returned object will have SHA256(tag) written to it twice (= 64 bytes).
  * A tagged hash can be computed by feeding the message into this object, and
- * then calling HashWriter::GetSHA256().
+ * then calling CHashWriter::GetSHA256().
  */
-HashWriter TaggedHash(const std::string& tag);
+CHashWriter TaggedHash(const std::string& tag);
 
 #endif // QOGECOIN_HASH_H

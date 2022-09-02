@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2015-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -30,7 +30,8 @@ static void CCheckQueueSpeedPrevectorJob(benchmark::Bench& bench)
 
     struct PrevectorJob {
         prevector<PREVECTOR_SIZE, uint8_t> p;
-        PrevectorJob() = default;
+        PrevectorJob(){
+        }
         explicit PrevectorJob(FastRandomContext& insecure_rand){
             p.resize(insecure_rand.randrange(PREVECTOR_SIZE*2));
         }

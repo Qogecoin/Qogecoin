@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2015-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -129,13 +129,6 @@ void BumpFee(TransactionView& view, const uint256& txid, bool expectDisabled, st
     QVERIFY(text.indexOf(QString::fromStdString(expectError)) != -1);
 }
 
-void CompareBalance(WalletModel& walletModel, CAmount expected_balance, QLabel* balance_label_to_check)
-{
-    QogecoinUnit unit = walletModel.getOptionsModel()->getDisplayUnit();
-    QString balanceComparison = QogecoinUnits::formatWithUnit(unit, expected_balance, false, QogecoinUnits::SeparatorStyle::ALWAYS);
-    QCOMPARE(balance_label_to_check->text().trimmed(), balanceComparison);
-}
-
 //! Simple qt wallet tests.
 //
 // Test widgets can be debugged interactively calling show() on them and
@@ -175,14 +168,14 @@ void TestGUI(interfaces::Node& node)
         if (!wallet->AddWalletDescriptor(w_desc, provider, "", false)) assert(false);
         CTxDestination dest = GetDestinationForKey(test.coinbaseKey.GetPubKey(), wallet->m_default_address_type);
         wallet->SetAddressBook(dest, "", "receive");
-        wallet->SetLastBlockProcessed(105, WITH_LOCK(node.context()->chainman->GetMutex(), return node.context()->chainman->ActiveChain().Tip()->GetBlockHash()));
+        wallet->SetLastBlockProcessed(105, node.context()->chainman->ActiveChain().Tip()->GetBlockHash());
     }
     {
         WalletRescanReserver reserver(*wallet);
         reserver.reserve();
-        CWallet::ScanResult result = wallet->ScanForWalletTransactions(Params().GetConsensus().hashGenesisBlock, /*start_height=*/0, /*max_height=*/{}, reserver, /*fUpdate=*/true, /*save_progress=*/false);
+        CWallet::ScanResult result = wallet->ScanForWalletTransactions(Params().GetConsensus().hashGenesisBlock, 0 /* block height */, {} /* max height */, reserver, true /* fUpdate */);
         QCOMPARE(result.status, CWallet::ScanResult::SUCCESS);
-        QCOMPARE(result.last_scanned_block, WITH_LOCK(node.context()->chainman->GetMutex(), return node.context()->chainman->ActiveChain().Tip()->GetBlockHash()));
+        QCOMPARE(result.last_scanned_block, node.context()->chainman->ActiveChain().Tip()->GetBlockHash());
         QVERIFY(result.last_failed_block.IsNull());
     }
     wallet->SetBroadcastTransactions(true);
@@ -191,9 +184,7 @@ void TestGUI(interfaces::Node& node)
     std::unique_ptr<const PlatformStyle> platformStyle(PlatformStyle::instantiate("other"));
     SendCoinsDialog sendCoinsDialog(platformStyle.get());
     TransactionView transactionView(platformStyle.get());
-    OptionsModel optionsModel(node);
-    bilingual_str error;
-    QVERIFY(optionsModel.Init(error));
+    OptionsModel optionsModel;
     ClientModel clientModel(node, &optionsModel);
     WalletContext& context = *node.walletLoader().context();
     AddWallet(context, wallet);
@@ -202,10 +193,15 @@ void TestGUI(interfaces::Node& node)
     sendCoinsDialog.setModel(&walletModel);
     transactionView.setModel(&walletModel);
 
-    // Update walletModel cached balance which will trigger an update for the 'labelBalance' QLabel.
-    walletModel.pollBalanceChanged();
-    // Check balance in send dialog
-    CompareBalance(walletModel, walletModel.wallet().getBalance(), sendCoinsDialog.findChild<QLabel*>("labelBalance"));
+    {
+        // Check balance in send dialog
+        QLabel* balanceLabel = sendCoinsDialog.findChild<QLabel*>("labelBalance");
+        QString balanceText = balanceLabel->text();
+        QogecoinUnit unit = walletModel.getOptionsModel()->getDisplayUnit();
+        CAmount balance = walletModel.wallet().getBalance();
+        QString balanceComparison = QogecoinUnits::formatWithUnit(unit, balance, false, QogecoinUnits::SeparatorStyle::ALWAYS);
+        QCOMPARE(balanceText, balanceComparison);
+    }
 
     // Send two transactions, and verify they are added to transaction list.
     TransactionTableModel* transactionTableModel = walletModel.getTransactionTableModel();
@@ -225,8 +221,12 @@ void TestGUI(interfaces::Node& node)
     // Check current balance on OverviewPage
     OverviewPage overviewPage(platformStyle.get());
     overviewPage.setWalletModel(&walletModel);
-    walletModel.pollBalanceChanged(); // Manual balance polling update
-    CompareBalance(walletModel, walletModel.wallet().getBalance(), overviewPage.findChild<QLabel*>("labelBalance"));
+    QLabel* balanceLabel = overviewPage.findChild<QLabel*>("labelBalance");
+    QString balanceText = balanceLabel->text().trimmed();
+    QogecoinUnit unit = walletModel.getOptionsModel()->getDisplayUnit();
+    CAmount balance = walletModel.wallet().getBalance();
+    QString balanceComparison = QogecoinUnits::formatWithUnit(unit, balance, false, QogecoinUnits::SeparatorStyle::ALWAYS);
+    QCOMPARE(balanceText, balanceComparison);
 
     // Check Request Payment button
     ReceiveCoinsDialog receiveCoinsDialog(platformStyle.get());
@@ -315,7 +315,7 @@ void TestGUI(interfaces::Node& node)
 
 void WalletTests::walletTests()
 {
-#ifdef Q_OS_MACOS
+#ifdef Q_OS_MAC
     if (QApplication::platformName() == "minimal") {
         // Disable for mac on "minimal" platform to avoid crashes inside the Qt
         // framework when it tries to look up unimplemented cocoa functions,

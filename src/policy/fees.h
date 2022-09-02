@@ -1,27 +1,26 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef QOGECOIN_POLICY_FEES_H
 #define QOGECOIN_POLICY_FEES_H
 
 #include <consensus/amount.h>
-#include <fs.h>
 #include <policy/feerate.h>
+#include <uint256.h>
 #include <random.h>
 #include <sync.h>
-#include <threadsafety.h>
-#include <uint256.h>
 
 #include <array>
 #include <map>
 #include <memory>
-#include <set>
 #include <string>
 #include <vector>
 
-class AutoFile;
+class CAutoFile;
+class CFeeRate;
 class CTxMemPoolEntry;
+class CTxMemPool;
 class TxConfirmStats;
 
 /* Identifier for each of the 3 different TxConfirmStats which will track
@@ -180,10 +179,9 @@ private:
      */
     static constexpr double FEE_SPACING = 1.05;
 
-    const fs::path m_estimation_filepath;
 public:
     /** Create new BlockPolicyEstimator and initialize stats tracking classes with default values */
-    CBlockPolicyEstimator(const fs::path& estimation_filepath);
+    CBlockPolicyEstimator();
     ~CBlockPolicyEstimator();
 
     /** Process all the transactions that have been included in a block */
@@ -220,11 +218,11 @@ public:
         EXCLUSIVE_LOCKS_REQUIRED(!m_cs_fee_estimator);
 
     /** Write estimation data to a file */
-    bool Write(AutoFile& fileout) const
+    bool Write(CAutoFile& fileout) const
         EXCLUSIVE_LOCKS_REQUIRED(!m_cs_fee_estimator);
 
     /** Read estimation data from a file */
-    bool Read(AutoFile& filein)
+    bool Read(CAutoFile& filein)
         EXCLUSIVE_LOCKS_REQUIRED(!m_cs_fee_estimator);
 
     /** Empty mempool transactions on shutdown to record failure to confirm for txs still in mempool */

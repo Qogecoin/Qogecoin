@@ -1,4 +1,4 @@
-// Copyright (c) 2018 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2018 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,12 +6,10 @@
 #include <random.h>
 #include <util/bytevectorhash.h>
 
-#include <vector>
-
-ByteVectorHash::ByteVectorHash() :
-    m_k0(GetRand<uint64_t>()),
-    m_k1(GetRand<uint64_t>())
+ByteVectorHash::ByteVectorHash()
 {
+    GetRandBytes({reinterpret_cast<unsigned char*>(&m_k0), sizeof(m_k0)});
+    GetRandBytes({reinterpret_cast<unsigned char*>(&m_k1), sizeof(m_k1)});
 }
 
 size_t ByteVectorHash::operator()(const std::vector<unsigned char>& input) const

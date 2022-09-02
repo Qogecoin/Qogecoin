@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,8 @@
 #include <config/qogecoin-config.h>
 #endif
 
-#include <compat/compat.h>
+#include <attributes.h>
+#include <compat.h>
 #include <crypto/siphash.h>
 #include <prevector.h>
 #include <random.h>
@@ -555,8 +556,8 @@ class CServiceHash
 {
 public:
     CServiceHash()
-        : m_salt_k0{GetRand<uint64_t>()},
-          m_salt_k1{GetRand<uint64_t>()}
+        : m_salt_k0{GetRand(std::numeric_limits<uint64_t>::max())},
+          m_salt_k1{GetRand(std::numeric_limits<uint64_t>::max())}
     {
     }
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -62,7 +62,7 @@ struct TxLessThan
 struct TransactionNotification
 {
 public:
-    TransactionNotification() = default;
+    TransactionNotification() {}
     TransactionNotification(uint256 _hash, ChangeType _status, bool _showTransaction):
         hash(_hash), status(_status), showTransaction(_showTransaction) {}
 

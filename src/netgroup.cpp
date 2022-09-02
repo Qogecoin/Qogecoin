@@ -1,4 +1,4 @@
-// Copyright (c) 2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -71,7 +71,7 @@ std::vector<unsigned char> NetGroupManager::GetGroup(const CNetAddr& address) co
     // ...for the last byte, push nBits and for the rest of the byte push 1's
     if (nBits > 0) {
         assert(num_bytes < addr_bytes.size());
-        vchRet.push_back(addr_bytes[num_bytes + nStartByte] | ((1 << (8 - nBits)) - 1));
+        vchRet.push_back(addr_bytes[num_bytes] | ((1 << (8 - nBits)) - 1));
     }
 
     return vchRet;

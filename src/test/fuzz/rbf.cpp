@@ -1,15 +1,13 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <node/mempool_args.h>
 #include <policy/rbf.h>
 #include <primitives/transaction.h>
 #include <sync.h>
 #include <test/fuzz/FuzzedDataProvider.h>
 #include <test/fuzz/fuzz.h>
 #include <test/fuzz/util.h>
-#include <test/util/setup_common.h>
 #include <txmempool.h>
 
 #include <cstdint>
@@ -17,17 +15,7 @@
 #include <string>
 #include <vector>
 
-namespace {
-const BasicTestingSetup* g_setup;
-} // namespace
-
-void initialize_rbf()
-{
-    static const auto testing_setup = MakeNoLogFileContext<>();
-    g_setup = testing_setup.get();
-}
-
-FUZZ_TARGET_INIT(rbf, initialize_rbf)
+FUZZ_TARGET(rbf)
 {
     FuzzedDataProvider fuzzed_data_provider(buffer.data(), buffer.size());
     SetMockTime(ConsumeTime(fuzzed_data_provider));
@@ -35,11 +23,8 @@ FUZZ_TARGET_INIT(rbf, initialize_rbf)
     if (!mtx) {
         return;
     }
-
-    CTxMemPool pool{MemPoolOptionsForTest(g_setup->m_node)};
-
-    LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 10000)
-    {
+    CTxMemPool pool;
+    LIMITED_WHILE(fuzzed_data_provider.ConsumeBool(), 10000) {
         const std::optional<CMutableTransaction> another_mtx = ConsumeDeserializable<CMutableTransaction>(fuzzed_data_provider);
         if (!another_mtx) {
             break;

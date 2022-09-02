@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,7 +7,6 @@
 
 #include <initializer_list>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 /** Construct a vector with the specified elements.

@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,15 +13,11 @@
 #include <arith_uint256.h>
 #include <attributes.h>
 #include <chain.h>
-#include <chainparams.h>
-#include <kernel/chainstatemanager_opts.h>
 #include <consensus/amount.h>
-#include <deploymentstatus.h>
 #include <fs.h>
 #include <node/blockstorage.h>
 #include <policy/feerate.h>
 #include <policy/packages.h>
-#include <policy/policy.h>
 #include <script/script_error.h>
 #include <sync.h>
 #include <txdb.h>
@@ -30,7 +26,6 @@
 #include <util/check.h>
 #include <util/hasher.h>
 #include <util/translation.h>
-#include <versionbits.h>
 
 #include <atomic>
 #include <map>
@@ -45,6 +40,7 @@
 
 class CChainState;
 class CBlockTreeDB;
+class CChainParams;
 class CTxMemPool;
 class ChainstateManager;
 struct ChainTxData;
@@ -55,10 +51,29 @@ struct AssumeutxoData;
 namespace node {
 class SnapshotMetadata;
 } // namespace node
-namespace Consensus {
-struct Params;
-} // namespace Consensus
 
+/** Default for -minrelaytxfee, minimum relay fee for transactions */
+static const unsigned int DEFAULT_MIN_RELAY_TX_FEE = 1000;
+/** Default for -limitancestorcount, max number of in-mempool ancestors */
+static const unsigned int DEFAULT_ANCESTOR_LIMIT = 25;
+/** Default for -limitancestorsize, maximum kilobytes of tx + all in-mempool ancestors */
+static const unsigned int DEFAULT_ANCESTOR_SIZE_LIMIT = 101;
+/** Default for -limitdescendantcount, max number of in-mempool descendants */
+static const unsigned int DEFAULT_DESCENDANT_LIMIT = 25;
+/** Default for -limitdescendantsize, maximum kilobytes of in-mempool descendants */
+static const unsigned int DEFAULT_DESCENDANT_SIZE_LIMIT = 101;
+
+// If a package is submitted, it must be within the mempool's ancestor/descendant limits. Since a
+// submitted package must be child-with-unconfirmed-parents (all of the transactions are an ancestor
+// of the child), package limits are ultimately bounded by mempool package limits. Ensure that the
+// defaults reflect this constraint.
+static_assert(DEFAULT_DESCENDANT_LIMIT >= MAX_PACKAGE_COUNT);
+static_assert(DEFAULT_ANCESTOR_LIMIT >= MAX_PACKAGE_COUNT);
+static_assert(DEFAULT_ANCESTOR_SIZE_LIMIT >= MAX_PACKAGE_SIZE);
+static_assert(DEFAULT_DESCENDANT_SIZE_LIMIT >= MAX_PACKAGE_SIZE);
+
+/** Default for -mempoolexpiry, expiration time for mempool transactions in hours */
+static const unsigned int DEFAULT_MEMPOOL_EXPIRY = 336;
 /** Maximum number of dedicated script-checking threads allowed */
 static const int MAX_SCRIPTCHECK_THREADS = 15;
 /** -par default (number of script-checking threads, 0 = auto) */
@@ -68,6 +83,8 @@ static const bool DEFAULT_CHECKPOINTS_ENABLED = true;
 static const bool DEFAULT_TXINDEX = false;
 static constexpr bool DEFAULT_COINSTATSINDEX{false};
 static const char* const DEFAULT_BLOCKFILTERINDEX = "0";
+/** Default for -persistmempool */
+static const bool DEFAULT_PERSIST_MEMPOOL = true;
 /** Default for -stopatheight */
 static const int DEFAULT_STOPATHEIGHT = 0;
 /** Block files containing a block-height within MIN_BLOCKS_TO_KEEP of ActiveChain().Tip() will not be pruned. */
@@ -92,7 +109,7 @@ enum class SynchronizationState {
 };
 
 extern RecursiveMutex cs_main;
-extern GlobalMutex g_best_block_mutex;
+extern Mutex g_best_block_mutex;
 extern std::condition_variable g_best_block_cv;
 /** Used to notify getblocktemplate RPC of new tips. */
 extern uint256 g_best_block;
@@ -100,8 +117,11 @@ extern uint256 g_best_block;
  * False indicates all script checking is done on the main threadMessageHandler thread.
  */
 extern bool g_parallel_script_checks;
+extern bool fRequireStandard;
 extern bool fCheckBlockIndex;
 extern bool fCheckpointsEnabled;
+/** A fee rate smaller than this is considered zero fee (for relaying, mining and transaction creation) */
+extern CFeeRate minRelayTxFee;
 /** If the tip is older than this (in seconds), the node is considered to be in initial block download. */
 extern int64_t nMaxTipAge;
 
@@ -147,7 +167,7 @@ struct MempoolAcceptResult {
     const TxValidationState m_state;
 
     // The following fields are only present when m_result_type = ResultType::VALID or MEMPOOL_ENTRY
-    /** Mempool transactions replaced by the tx. */
+    /** Mempool transactions replaced by the tx per BIP 125 rules. */
     const std::optional<std::list<CTransactionRef>> m_replaced_transactions;
     /** Virtual size as used by the mempool, calculated using serialized size and sigops. */
     const std::optional<int64_t> m_vsize;
@@ -256,12 +276,12 @@ PackageMempoolAcceptResult ProcessNewPackage(CChainState& active_chainstate, CTx
                                                    const Package& txns, bool test_accept)
                                                    EXCLUSIVE_LOCKS_REQUIRED(cs_main);
 
-/* Mempool validation helper functions */
+/* Transaction policy functions */
 
 /**
  * Check if transaction will be final in the next block to be created.
  */
-bool CheckFinalTxAtTip(const CBlockIndex& active_chain_tip, const CTransaction& tx) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
+bool CheckFinalTxAtTip(const CBlockIndex* active_chain_tip, const CTransaction& tx) EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
 /**
  * Check if transaction will be BIP68 final in the next block to be created on top of tip.
@@ -322,7 +342,7 @@ public:
 };
 
 /** Initializes the script-execution cache */
-[[nodiscard]] bool InitScriptExecutionCache(size_t max_size_bytes);
+void InitScriptExecutionCache();
 
 /** Functions for validating blocks and updating the block tree */
 
@@ -335,9 +355,14 @@ bool TestBlockValidity(BlockValidationState& state,
                        CChainState& chainstate,
                        const CBlock& block,
                        CBlockIndex* pindexPrev,
-                       const std::function<NodeClock::time_point()>& adjusted_time_callback,
                        bool fCheckPOW = true,
                        bool fCheckMerkleRoot = true) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
+
+/** Update uncommitted block structures (currently: only the witness reserved value). This is safe for submitted blocks. */
+void UpdateUncommittedBlockStructures(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
+
+/** Produce the necessary coinbase commitment for a block (modifies the hash, don't call for mined blocks). */
+std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBlockIndex* pindexPrev, const Consensus::Params& consensusParams);
 
 /** RAII wrapper for VerifyDB: Verify consistency of the block and coin databases */
 class CVerifyDB {
@@ -469,7 +494,6 @@ public:
     node::BlockManager& m_blockman;
 
     /** Chain parameters for this chainstate */
-    /* TODO: replace with m_chainman.GetParams() */
     const CChainParams& m_params;
 
     //! The chainstate manager that owns this chainstate. The reference is
@@ -573,36 +597,8 @@ public:
     bool ResizeCoinsCaches(size_t coinstip_size, size_t coinsdb_size)
         EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
-    /**
-     * Import blocks from an external file
-     *
-     * During reindexing, this function is called for each block file (datadir/blocks/blk?????.dat).
-     * It reads all blocks contained in the given file and attempts to process them (add them to the
-     * block index). The blocks may be out of order within each file and across files. Often this
-     * function reads a block but finds that its parent hasn't been read yet, so the block can't be
-     * processed yet. The function will add an entry to the blocks_with_unknown_parent map (which is
-     * passed as an argument), so that when the block's parent is later read and processed, this
-     * function can re-read the child block from disk and process it.
-     *
-     * Because a block's parent may be in a later file, not just later in the same file, the
-     * blocks_with_unknown_parent map must be passed in and out with each call. It's a multimap,
-     * rather than just a map, because multiple blocks may have the same parent (when chain splits
-     * or stale blocks exist). It maps from parent-hash to child-disk-position.
-     *
-     * This function can also be used to read blocks from user-specified block files using the
-     * -loadblock= option. There's no unknown-parent tracking, so the last two arguments are omitted.
-     *
-     *
-     * @param[in]     fileIn                        FILE handle to file containing blocks to read
-     * @param[in]     dbp                           (optional) Disk block position (only for reindex)
-     * @param[in,out] blocks_with_unknown_parent    (optional) Map of disk positions for blocks with
-     *                                              unknown parent, key is parent block hash
-     *                                              (only used for reindex)
-     * */
-    void LoadExternalBlockFile(
-        FILE* fileIn,
-        FlatFilePos* dbp = nullptr,
-        std::multimap<uint256, FlatFilePos>* blocks_with_unknown_parent = nullptr)
+    /** Import blocks from an external file */
+    void LoadExternalBlockFile(FILE* fileIn, FlatFilePos* dbp = nullptr)
         EXCLUSIVE_LOCKS_REQUIRED(!m_chainstate_mutex);
 
     /**
@@ -703,7 +699,7 @@ public:
     void CheckBlockIndex();
 
     /** Load the persisted mempool from disk */
-    void LoadMempool(const fs::path& load_path, fsbridge::FopenFn mockable_fopen_function = fsbridge::fopen);
+    void LoadMempool(const ArgsManager& args);
 
     /** Update the chain tip based on database information, i.e. CoinsTip()'s best block. */
     bool LoadChainTip() EXCLUSIVE_LOCKS_REQUIRED(cs_main);
@@ -837,14 +833,10 @@ private:
 
     CBlockIndex* m_best_invalid GUARDED_BY(::cs_main){nullptr};
 
-    const CChainParams m_chainparams;
-
-    const std::function<NodeClock::time_point()> m_adjusted_time_callback;
-
     //! Internal helper for ActivateSnapshot().
     [[nodiscard]] bool PopulateAndValidateSnapshot(
         CChainState& snapshot_chainstate,
-        AutoFile& coins_file,
+        CAutoFile& coins_file,
         const node::SnapshotMetadata& metadata);
 
     /**
@@ -854,32 +846,11 @@ private:
     bool AcceptBlockHeader(
         const CBlockHeader& block,
         BlockValidationState& state,
+        const CChainParams& chainparams,
         CBlockIndex** ppindex) EXCLUSIVE_LOCKS_REQUIRED(cs_main);
     friend CChainState;
 
 public:
-    using Options = kernel::ChainstateManagerOpts;
-
-    explicit ChainstateManager(const Options& opts)
-        : m_chainparams{opts.chainparams},
-          m_adjusted_time_callback{Assert(opts.adjusted_time_callback)} {};
-
-    const CChainParams& GetParams() const { return m_chainparams; }
-    const Consensus::Params& GetConsensus() const { return m_chainparams.GetConsensus(); }
-
-    /**
-     * Alias for ::cs_main.
-     * Should be used in new code to make it easier to make ::cs_main a member
-     * of this class.
-     * Generally, methods of this class should be annotated to require this
-     * mutex. This will make calling code more verbose, but also help to:
-     * - Clarify that the method will acquire a mutex that heavily affects
-     *   overall performance.
-     * - Force call sites to think how long they need to acquire the mutex to
-     *   get consistent results.
-     */
-    RecursiveMutex& GetMutex() const LOCK_RETURNED(::cs_main) { return ::cs_main; }
-
     std::thread m_load_block;
     //! A single BlockManager instance is shared across each constructed
     //! chainstate to avoid duplicating block metadata.
@@ -946,24 +917,19 @@ public:
     //! - Move the new chainstate to `m_snapshot_chainstate` and make it our
     //!   ChainstateActive().
     [[nodiscard]] bool ActivateSnapshot(
-        AutoFile& coins_file, const node::SnapshotMetadata& metadata, bool in_memory);
+        CAutoFile& coins_file, const node::SnapshotMetadata& metadata, bool in_memory);
 
     //! The most-work chain.
     CChainState& ActiveChainstate() const;
-    CChain& ActiveChain() const EXCLUSIVE_LOCKS_REQUIRED(GetMutex()) { return ActiveChainstate().m_chain; }
-    int ActiveHeight() const EXCLUSIVE_LOCKS_REQUIRED(GetMutex()) { return ActiveChain().Height(); }
-    CBlockIndex* ActiveTip() const EXCLUSIVE_LOCKS_REQUIRED(GetMutex()) { return ActiveChain().Tip(); }
+    CChain& ActiveChain() const { return ActiveChainstate().m_chain; }
+    int ActiveHeight() const { return ActiveChain().Height(); }
+    CBlockIndex* ActiveTip() const { return ActiveChain().Tip(); }
 
     node::BlockMap& BlockIndex() EXCLUSIVE_LOCKS_REQUIRED(::cs_main)
     {
         AssertLockHeld(::cs_main);
         return m_blockman.m_block_index;
     }
-
-    /**
-     * Track versionbit status
-     */
-    mutable VersionBitsCache m_versionbitscache;
 
     //! @returns true if a snapshot-based chainstate is in use. Also implies
     //!          that a background validation chainstate is also in use.
@@ -993,7 +959,7 @@ public:
      * @param[out]  new_block A boolean which is set to indicate if the block was first received via this call
      * @returns     If the block was processed, independently of block validity
      */
-    bool ProcessNewBlock(const std::shared_ptr<const CBlock>& block, bool force_processing, bool* new_block) LOCKS_EXCLUDED(cs_main);
+    bool ProcessNewBlock(const CChainParams& chainparams, const std::shared_ptr<const CBlock>& block, bool force_processing, bool* new_block) LOCKS_EXCLUDED(cs_main);
 
     /**
      * Process incoming block headers.
@@ -1003,9 +969,10 @@ public:
      *
      * @param[in]  block The block headers themselves
      * @param[out] state This may be set to an Error state if any error occurred processing them
+     * @param[in]  chainparams The params for the chain we want to connect to
      * @param[out] ppindex If set, the pointer will be set to point to the last new block index object for the given headers
      */
-    bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& block, BlockValidationState& state, const CBlockIndex** ppindex = nullptr) LOCKS_EXCLUDED(cs_main);
+    bool ProcessNewBlockHeaders(const std::vector<CBlockHeader>& block, BlockValidationState& state, const CChainParams& chainparams, const CBlockIndex** ppindex = nullptr) LOCKS_EXCLUDED(cs_main);
 
     /**
      * Try to add a transaction to the memory pool.
@@ -1023,33 +990,16 @@ public:
     //! ResizeCoinsCaches() as needed.
     void MaybeRebalanceCaches() EXCLUSIVE_LOCKS_REQUIRED(::cs_main);
 
-    /** Update uncommitted block structures (currently: only the witness reserved value). This is safe for submitted blocks. */
-    void UpdateUncommittedBlockStructures(CBlock& block, const CBlockIndex* pindexPrev) const;
-
-    /** Produce the necessary coinbase commitment for a block (modifies the hash, don't call for mined blocks). */
-    std::vector<unsigned char> GenerateCoinbaseCommitment(CBlock& block, const CBlockIndex* pindexPrev) const;
-
     ~ChainstateManager();
 };
 
-/** Deployment* info via ChainstateManager */
-template<typename DEP>
-bool DeploymentActiveAfter(const CBlockIndex* pindexPrev, const ChainstateManager& chainman, DEP dep)
-{
-    return DeploymentActiveAfter(pindexPrev, chainman.GetConsensus(), dep, chainman.m_versionbitscache);
-}
+using FopenFn = std::function<FILE*(const fs::path&, const char*)>;
 
-template<typename DEP>
-bool DeploymentActiveAt(const CBlockIndex& index, const ChainstateManager& chainman, DEP dep)
-{
-    return DeploymentActiveAt(index, chainman.GetConsensus(), dep, chainman.m_versionbitscache);
-}
+/** Dump the mempool to disk. */
+bool DumpMempool(const CTxMemPool& pool, FopenFn mockable_fopen_function = fsbridge::fopen, bool skip_file_commit = false);
 
-template<typename DEP>
-bool DeploymentEnabled(const ChainstateManager& chainman, DEP dep)
-{
-    return DeploymentEnabled(chainman.GetConsensus(), dep);
-}
+/** Load the mempool from disk. */
+bool LoadMempool(CTxMemPool& pool, CChainState& active_chainstate, FopenFn mockable_fopen_function = fsbridge::fopen);
 
 /**
  * Return the expected assumeutxo value for a given height, if one exists.

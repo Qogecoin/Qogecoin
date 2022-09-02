@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -20,7 +20,6 @@ static const std::string OUTPUT_TYPE_STRING_LEGACY = "legacy";
 static const std::string OUTPUT_TYPE_STRING_P2SH_SEGWIT = "p2sh-segwit";
 static const std::string OUTPUT_TYPE_STRING_BECH32 = "bech32";
 static const std::string OUTPUT_TYPE_STRING_BECH32M = "bech32m";
-static const std::string OUTPUT_TYPE_STRING_UNKNOWN = "unknown";
 
 std::optional<OutputType> ParseOutputType(const std::string& type)
 {
@@ -32,8 +31,6 @@ std::optional<OutputType> ParseOutputType(const std::string& type)
         return OutputType::BECH32;
     } else if (type == OUTPUT_TYPE_STRING_BECH32M) {
         return OutputType::BECH32M;
-    } else if (type == OUTPUT_TYPE_STRING_UNKNOWN) {
-        return OutputType::UNKNOWN;
     }
     return std::nullopt;
 }
@@ -45,7 +42,6 @@ const std::string& FormatOutputType(OutputType type)
     case OutputType::P2SH_SEGWIT: return OUTPUT_TYPE_STRING_P2SH_SEGWIT;
     case OutputType::BECH32: return OUTPUT_TYPE_STRING_BECH32;
     case OutputType::BECH32M: return OUTPUT_TYPE_STRING_BECH32M;
-    case OutputType::UNKNOWN: return OUTPUT_TYPE_STRING_UNKNOWN;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
@@ -65,8 +61,7 @@ CTxDestination GetDestinationForKey(const CPubKey& key, OutputType type)
             return witdest;
         }
     }
-    case OutputType::BECH32M:
-    case OutputType::UNKNOWN: {} // This function should never be used with BECH32M or UNKNOWN, so let it assert
+    case OutputType::BECH32M: {} // This function should never be used with BECH32M, so let it assert
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }
@@ -96,6 +91,8 @@ CTxDestination AddAndGetDestinationForScript(FillableSigningProvider& keystore, 
     case OutputType::BECH32: {
         CTxDestination witdest = WitnessV0ScriptHash(script);
         CScript witprog = GetScriptForDestination(witdest);
+        // Check if the resulting program is solvable (i.e. doesn't use an uncompressed key)
+        if (!IsSolvable(keystore, witprog)) return ScriptHash(script);
         // Add the redeemscript, so that P2WSH and P2SH-P2WSH outputs are recognized as ours.
         keystore.AddCScript(witprog);
         if (type == OutputType::BECH32) {
@@ -104,8 +101,7 @@ CTxDestination AddAndGetDestinationForScript(FillableSigningProvider& keystore, 
             return ScriptHash(witprog);
         }
     }
-    case OutputType::BECH32M:
-    case OutputType::UNKNOWN: {} // This function should not be used for BECH32M or UNKNOWN, so let it assert
+    case OutputType::BECH32M: {} // This function should not be used for BECH32M, so let it assert
     } // no default case, so the compiler can warn about missing cases
     assert(false);
 }

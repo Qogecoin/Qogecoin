@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test mempool descendants/ancestors information update.
@@ -12,9 +12,6 @@ import time
 from decimal import Decimal
 from test_framework.test_framework import QogecoinTestFramework
 from test_framework.util import assert_equal
-from test_framework.address import key_to_p2pkh
-from test_framework.wallet_util import bytes_to_wif
-from test_framework.key import ECKey
 
 
 class MempoolUpdateFromBlockTest(QogecoinTestFramework):
@@ -22,13 +19,8 @@ class MempoolUpdateFromBlockTest(QogecoinTestFramework):
         self.num_nodes = 1
         self.extra_args = [['-limitdescendantsize=1000', '-limitancestorsize=1000', '-limitancestorcount=100']]
 
-    def get_new_address(self):
-        key = ECKey()
-        key.generate()
-        pubkey = key.get_pubkey().get_bytes()
-        address = key_to_p2pkh(pubkey)
-        self.priv_keys.append(bytes_to_wif(key.get_bytes()))
-        return address
+    def skip_test_if_missing_module(self):
+        self.skip_if_no_wallet()
 
     def transaction_graph_test(self, size, n_tx_to_mine=None, start_input_txid='', end_address='', fee=Decimal(0.00100000)):
         """Create an acyclic tournament (a type of directed graph) of transactions and use it for testing.
@@ -46,12 +38,11 @@ class MempoolUpdateFromBlockTest(QogecoinTestFramework):
         More details: https://en.wikipedia.org/wiki/Tournament_(graph_theory)
         """
 
-        self.priv_keys = [self.nodes[0].get_deterministic_priv_key().key]
         if not start_input_txid:
             start_input_txid = self.nodes[0].getblock(self.nodes[0].getblockhash(1))['tx'][0]
 
         if not end_address:
-            end_address = self.get_new_address()
+            end_address = self.nodes[0].getnewaddress()
 
         first_block_hash = ''
         tx_id = []
@@ -83,7 +74,7 @@ class MempoolUpdateFromBlockTest(QogecoinTestFramework):
                 output_value = ((inputs_value - fee) / Decimal(n_outputs)).quantize(Decimal('0.00000001'))
                 outputs = {}
                 for _ in range(n_outputs):
-                    outputs[self.get_new_address()] = output_value
+                    outputs[self.nodes[0].getnewaddress()] = output_value
             else:
                 output_value = (inputs_value - fee).quantize(Decimal('0.00000001'))
                 outputs = {end_address: output_value}
@@ -93,7 +84,7 @@ class MempoolUpdateFromBlockTest(QogecoinTestFramework):
 
             # Create a new transaction.
             unsigned_raw_tx = self.nodes[0].createrawtransaction(inputs, outputs)
-            signed_raw_tx = self.nodes[0].signrawtransactionwithkey(unsigned_raw_tx, self.priv_keys)
+            signed_raw_tx = self.nodes[0].signrawtransactionwithwallet(unsigned_raw_tx)
             tx_id.append(self.nodes[0].sendrawtransaction(signed_raw_tx['hex']))
             tx_size.append(self.nodes[0].getmempoolentry(tx_id[-1])['vsize'])
 

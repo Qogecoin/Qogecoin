@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,7 +7,7 @@
 
 #include <qt/sendcoinsrecipient.h>
 
-#include <QWidget>
+#include <QStackedWidget>
 
 class WalletModel;
 class PlatformStyle;
@@ -22,8 +22,10 @@ namespace Ui {
 
 /**
  * A single entry in the dialog for sending qogecoins.
+ * Stacked widget, with different UIs for payment requests
+ * with a strong payee identity.
  */
-class SendCoinsEntry : public QWidget
+class SendCoinsEntry : public QStackedWidget
 {
     Q_OBJECT
 

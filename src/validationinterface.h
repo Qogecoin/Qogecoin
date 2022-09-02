@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,9 @@ class BlockValidationState;
 class CBlock;
 class CBlockIndex;
 struct CBlockLocator;
+class CConnman;
 class CValidationInterface;
+class uint256;
 class CScheduler;
 enum class MemPoolRemovalReason;
 
@@ -175,10 +177,10 @@ protected:
     friend class ValidationInterfaceTest;
 };
 
-class MainSignalsImpl;
+struct MainSignalsInstance;
 class CMainSignals {
 private:
-    std::unique_ptr<MainSignalsImpl> m_internals;
+    std::unique_ptr<MainSignalsInstance> m_internals;
 
     friend void ::RegisterSharedValidationInterface(std::shared_ptr<CValidationInterface>);
     friend void ::UnregisterValidationInterface(CValidationInterface*);

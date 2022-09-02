@@ -1,4 +1,4 @@
-// Copyright (c) 2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,7 +18,7 @@ BOOST_FIXTURE_TEST_SUITE(spend_tests, WalletTestingSetup)
 BOOST_FIXTURE_TEST_CASE(SubtractFee, TestChain100Setup)
 {
     CreateAndProcessBlock({}, GetScriptForRawPubKey(coinbaseKey.GetPubKey()));
-    auto wallet = CreateSyncedWallet(*m_node.chain, WITH_LOCK(Assert(m_node.chainman)->GetMutex(), return m_node.chainman->ActiveChain()), m_args, coinbaseKey);
+    auto wallet = CreateSyncedWallet(*m_node.chain, m_node.chainman->ActiveChain(), m_args, coinbaseKey);
 
     // Check that a subtract-from-recipient transaction slightly less than the
     // coinbase input amount does not create a change output (because it would
@@ -27,19 +27,21 @@ BOOST_FIXTURE_TEST_CASE(SubtractFee, TestChain100Setup)
     // instead of the miner.
     auto check_tx = [&wallet](CAmount leftover_input_amount) {
         CRecipient recipient{GetScriptForRawPubKey({}), 50 * COIN - leftover_input_amount, true /* subtract fee */};
-        constexpr int RANDOM_CHANGE_POSITION = -1;
+        CTransactionRef tx;
+        CAmount fee;
+        int change_pos = -1;
+        bilingual_str error;
         CCoinControl coin_control;
         coin_control.m_feerate.emplace(10000);
         coin_control.fOverrideFeeRate = true;
         // We need to use a change type with high cost of change so that the leftover amount will be dropped to fee instead of added as a change output
         coin_control.m_change_type = OutputType::LEGACY;
-        auto res = CreateTransaction(*wallet, {recipient}, RANDOM_CHANGE_POSITION, coin_control);
-        BOOST_CHECK(res);
-        const auto& txr = *res;
-        BOOST_CHECK_EQUAL(txr.tx->vout.size(), 1);
-        BOOST_CHECK_EQUAL(txr.tx->vout[0].nValue, recipient.nAmount + leftover_input_amount - txr.fee);
-        BOOST_CHECK_GT(txr.fee, 0);
-        return txr.fee;
+        FeeCalculation fee_calc;
+        BOOST_CHECK(CreateTransaction(*wallet, {recipient}, tx, fee, change_pos, error, coin_control, fee_calc));
+        BOOST_CHECK_EQUAL(tx->vout.size(), 1);
+        BOOST_CHECK_EQUAL(tx->vout[0].nValue, recipient.nAmount + leftover_input_amount - fee);
+        BOOST_CHECK_GT(fee, 0);
+        return fee;
     };
 
     // Send full input amount to recipient, check that only nonzero fee is

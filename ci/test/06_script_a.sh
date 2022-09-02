@@ -1,29 +1,24 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 export LC_ALL=C.UTF-8
 
-QOGECOIN_CONFIG_ALL="--enable-suppress-external-warnings --disable-dependency-tracking --prefix=$DEPENDS_DIR/$HOST"
-if [ -z "$NO_WERROR" ]; then
-  QOGECOIN_CONFIG_ALL="${QOGECOIN_CONFIG_ALL} --enable-werror"
-fi
-
-CI_EXEC "ccache --zero-stats --max-size=$CCACHE_SIZE"
-PRINT_CCACHE_STATISTICS="ccache --version | head -n 1 && ccache --show-stats"
-
 if [ -n "$ANDROID_TOOLS_URL" ]; then
   CI_EXEC make distclean || true
   CI_EXEC ./autogen.sh
-  CI_EXEC ./configure "$QOGECOIN_CONFIG_ALL" "$QOGECOIN_CONFIG" || ( (CI_EXEC cat config.log) && false)
+  CI_EXEC ./configure "$QOGECOIN_CONFIG" --prefix="${DEPENDS_DIR}/aarch64-linux-android" || ( (CI_EXEC cat config.log) && false)
   CI_EXEC "make $MAKEJOBS && cd src/qt && ANDROID_HOME=${ANDROID_HOME} ANDROID_NDK_HOME=${ANDROID_NDK_HOME} make apk"
-  CI_EXEC "${PRINT_CCACHE_STATISTICS}"
   exit 0
 fi
 
-QOGECOIN_CONFIG_ALL="${QOGECOIN_CONFIG_ALL} --enable-external-signer --bindir=$BASE_OUTDIR/bin --libdir=$BASE_OUTDIR/lib"
+QOGECOIN_CONFIG_ALL="--enable-external-signer --enable-suppress-external-warnings --disable-dependency-tracking --prefix=$DEPENDS_DIR/$HOST --bindir=$BASE_OUTDIR/bin --libdir=$BASE_OUTDIR/lib"
+if [ -z "$NO_WERROR" ]; then
+  QOGECOIN_CONFIG_ALL="${QOGECOIN_CONFIG_ALL} --enable-werror"
+fi
+CI_EXEC "ccache --zero-stats --max-size=$CCACHE_SIZE"
 
 if [ -n "$CONFIG_SHELL" ]; then
   CI_EXEC "$CONFIG_SHELL" -c "./autogen.sh"
@@ -60,6 +55,6 @@ fi
 
 CI_EXEC "${MAYBE_BEAR}" "${MAYBE_TOKEN}" make "$MAKEJOBS" "$GOAL" || ( echo "Build failure. Verbose build follows." && CI_EXEC make "$GOAL" V=1 ; false )
 
-CI_EXEC "${PRINT_CCACHE_STATISTICS}"
+CI_EXEC "ccache --version | head -n 1 && ccache --show-stats"
 CI_EXEC du -sh "${DEPENDS_DIR}"/*/
 CI_EXEC du -sh "${PREVIOUS_RELEASES_DIR}"

@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,12 +8,12 @@
 
 #include <chainparams.h>
 #include <common/bloom.h>
-#include <compat/compat.h>
-#include <node/connection_types.h>
+#include <compat.h>
 #include <consensus/amount.h>
 #include <crypto/siphash.h>
 #include <hash.h>
 #include <i2p.h>
+#include <logging.h>
 #include <net_permissions.h>
 #include <netaddress.h>
 #include <netbase.h>
@@ -122,6 +122,78 @@ struct CSerializedNetMsg {
     std::string m_type;
 };
 
+/** Different types of connections to a peer. This enum encapsulates the
+ * information we have available at the time of opening or accepting the
+ * connection. Aside from INBOUND, all types are initiated by us.
+ *
+ * If adding or removing types, please update CONNECTION_TYPE_DOC in
+ * src/rpc/net.cpp and src/qt/rpcconsole.cpp, as well as the descriptions in
+ * src/qt/guiutil.cpp and src/qogecoin-cli.cpp::NetinfoRequestHandler. */
+enum class ConnectionType {
+    /**
+     * Inbound connections are those initiated by a peer. This is the only
+     * property we know at the time of connection, until P2P messages are
+     * exchanged.
+     */
+    INBOUND,
+
+    /**
+     * These are the default connections that we use to connect with the
+     * network. There is no restriction on what is relayed; by default we relay
+     * blocks, addresses & transactions. We automatically attempt to open
+     * MAX_OUTBOUND_FULL_RELAY_CONNECTIONS using addresses from our AddrMan.
+     */
+    OUTBOUND_FULL_RELAY,
+
+
+    /**
+     * We open manual connections to addresses that users explicitly requested
+     * via the addnode RPC or the -addnode/-connect configuration options. Even if a
+     * manual connection is misbehaving, we do not automatically disconnect or
+     * add it to our discouragement filter.
+     */
+    MANUAL,
+
+    /**
+     * Feeler connections are short-lived connections made to check that a node
+     * is alive. They can be useful for:
+     * - test-before-evict: if one of the peers is considered for eviction from
+     *   our AddrMan because another peer is mapped to the same slot in the tried table,
+     *   evict only if this longer-known peer is offline.
+     * - move node addresses from New to Tried table, so that we have more
+     *   connectable addresses in our AddrMan.
+     * Note that in the literature ("Eclipse Attacks on Qogecoin’s Peer-to-Peer Network")
+     * only the latter feature is referred to as "feeler connections",
+     * although in our codebase feeler connections encompass test-before-evict as well.
+     * We make these connections approximately every FEELER_INTERVAL:
+     * first we resolve previously found collisions if they exist (test-before-evict),
+     * otherwise we connect to a node from the new table.
+     */
+    FEELER,
+
+    /**
+     * We use block-relay-only connections to help prevent against partition
+     * attacks. By not relaying transactions or addresses, these connections
+     * are harder to detect by a third party, thus helping obfuscate the
+     * network topology. We automatically attempt to open
+     * MAX_BLOCK_RELAY_ONLY_ANCHORS using addresses from our anchors.dat. Then
+     * addresses from our AddrMan if MAX_BLOCK_RELAY_ONLY_CONNECTIONS
+     * isn't reached yet.
+     */
+    BLOCK_RELAY,
+
+    /**
+     * AddrFetch connections are short lived connections used to solicit
+     * addresses from peers. These are initiated to addresses submitted via the
+     * -seednode command line argument, or under certain conditions when the
+     * AddrMan is empty.
+     */
+    ADDR_FETCH,
+};
+
+/** Convert ConnectionType enum to a string value */
+std::string ConnectionTypeAsString(ConnectionType conn_type);
+
 /**
  * Look up IP addresses from all interfaces on the machine and add them to the
  * list of local addresses to self-advertise.
@@ -144,8 +216,8 @@ enum
 };
 
 bool IsPeerAddrLocalGood(CNode *pnode);
-/** Returns a local address that we should advertise to this peer. */
-std::optional<CService> GetLocalAddrForPeer(CNode& node);
+/** Returns a local address that we should advertise to this peer */
+std::optional<CAddress> GetLocalAddrForPeer(CNode *pnode);
 
 /**
  * Mark a network as reachable or unreachable (no automatic connects to it)
@@ -163,7 +235,7 @@ void RemoveLocal(const CService& addr);
 bool SeenLocal(const CService& addr);
 bool IsLocal(const CService& addr);
 bool GetLocal(CService &addr, const CNetAddr *paddrPeer = nullptr);
-CService GetLocalAddress(const CNetAddr& addrPeer);
+CAddress GetLocalAddress(const CNetAddr *paddrPeer, ServiceFlags nLocalServices);
 
 
 extern bool fDiscover;
@@ -177,16 +249,17 @@ struct LocalServiceInfo {
     uint16_t nPort;
 };
 
-extern GlobalMutex g_maplocalhost_mutex;
+extern Mutex g_maplocalhost_mutex;
 extern std::map<CNetAddr, LocalServiceInfo> mapLocalHost GUARDED_BY(g_maplocalhost_mutex);
 
-extern const std::string NET_MESSAGE_TYPE_OTHER;
-using mapMsgTypeSize = std::map</* message type */ std::string, /* total bytes */ uint64_t>;
+extern const std::string NET_MESSAGE_COMMAND_OTHER;
+typedef std::map<std::string, uint64_t> mapMsgCmdSize; //command, total bytes
 
 class CNodeStats
 {
 public:
     NodeId nodeid;
+    ServiceFlags nServices;
     std::chrono::seconds m_last_send;
     std::chrono::seconds m_last_recv;
     std::chrono::seconds m_last_tx_time;
@@ -201,9 +274,9 @@ public:
     bool m_bip152_highbandwidth_from;
     int m_starting_height;
     uint64_t nSendBytes;
-    mapMsgTypeSize mapSendBytesPerMsgType;
+    mapMsgCmdSize mapSendBytesPerMsgCmd;
     uint64_t nRecvBytes;
-    mapMsgTypeSize mapRecvBytesPerMsgType;
+    mapMsgCmdSize mapRecvBytesPerMsgCmd;
     NetPermissionFlags m_permissionFlags;
     std::chrono::microseconds m_last_ping_time;
     std::chrono::microseconds m_min_ping_time;
@@ -242,7 +315,7 @@ public:
 
 /** The TransportDeserializer takes care of holding and deserializing the
  * network receive buffer. It can deserialize the network buffer into a
- * transport protocol agnostic CNetMessage (message type & payload)
+ * transport protocol agnostic CNetMessage (command & payload)
  */
 class TransportDeserializer {
 public:
@@ -345,6 +418,7 @@ public:
     std::unique_ptr<TransportSerializer> m_serializer;
 
     NetPermissionFlags m_permissionFlags{NetPermissionFlags::None};
+    std::atomic<ServiceFlags> nServices{NODE_NONE};
 
     /**
      * Socket used for communication with the node.
@@ -397,6 +471,8 @@ public:
     bool HasPermission(NetPermissionFlags permission) const {
         return NetPermissions::HasFlag(m_permissionFlags, permission);
     }
+    bool fClient{false}; // set by version message
+    bool m_limited_node{false}; //after BIP159, set by version message
     /** fSuccessfullyConnected is set to true on receiving VERACK from the peer. */
     std::atomic_bool fSuccessfullyConnected{false};
     // Setting fDisconnect to true will cause the node to be disconnected the
@@ -480,9 +556,6 @@ public:
     // Peer selected us as (compact blocks) high-bandwidth peer (BIP152)
     std::atomic<bool> m_bip152_highbandwidth_from{false};
 
-    /** Whether this peer provides all services that we want. Used for eviction decisions */
-    std::atomic_bool m_has_all_wanted_services{false};
-
     /** Whether we should relay transactions to this peer (their version
      *  message did not include fRelay=false and this is not a block-relay-only
      *  connection). This only changes from false to true. It will never change
@@ -513,10 +586,7 @@ public:
      * criterium in CConnman::AttemptToEvictConnection. */
     std::atomic<std::chrono::microseconds> m_min_ping_time{std::chrono::microseconds::max()};
 
-    CNode(NodeId id, std::shared_ptr<Sock> sock, const CAddress& addrIn,
-          uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn,
-          const CAddress& addrBindIn, const std::string& addrNameIn,
-          ConnectionType conn_type_in, bool inbound_onion);
+    CNode(NodeId id, ServiceFlags nLocalServicesIn, std::shared_ptr<Sock> sock, const CAddress& addrIn, uint64_t nKeyedNetGroupIn, uint64_t nLocalHostNonceIn, const CAddress& addrBindIn, const std::string& addrNameIn, ConnectionType conn_type_in, bool inbound_onion);
     CNode(const CNode&) = delete;
     CNode& operator=(const CNode&) = delete;
 
@@ -543,7 +613,7 @@ public:
      * @return  True if the peer should stay connected,
      *          False if the peer should be disconnected from.
      */
-    bool ReceiveMsgBytes(Span<const uint8_t> msg_bytes, bool& complete) EXCLUSIVE_LOCKS_REQUIRED(!cs_vRecv);
+    bool ReceiveMsgBytes(Span<const uint8_t> msg_bytes, bool& complete);
 
     void SetCommonVersion(int greatest_common_version)
     {
@@ -555,9 +625,9 @@ public:
         return m_greatest_common_version;
     }
 
-    CService GetAddrLocal() const EXCLUSIVE_LOCKS_REQUIRED(!m_addr_local_mutex);
+    CService GetAddrLocal() const LOCKS_EXCLUDED(m_addr_local_mutex);
     //! May not be called more than once
-    void SetAddrLocal(const CService& addrLocalIn) EXCLUSIVE_LOCKS_REQUIRED(!m_addr_local_mutex);
+    void SetAddrLocal(const CService& addrLocalIn) LOCKS_EXCLUDED(m_addr_local_mutex);
 
     CNode* AddRef()
     {
@@ -570,9 +640,14 @@ public:
         nRefCount--;
     }
 
-    void CloseSocketDisconnect() EXCLUSIVE_LOCKS_REQUIRED(!m_sock_mutex);
+    void CloseSocketDisconnect();
 
-    void CopyStats(CNodeStats& stats) EXCLUSIVE_LOCKS_REQUIRED(!m_subver_mutex, !m_addr_local_mutex, !cs_vSend, !cs_vRecv);
+    void CopyStats(CNodeStats& stats);
+
+    ServiceFlags GetLocalServices() const
+    {
+        return nLocalServices;
+    }
 
     std::string ConnectionTypeAsString() const { return ::ConnectionTypeAsString(m_conn_type); }
 
@@ -588,14 +663,31 @@ private:
     const ConnectionType m_conn_type;
     std::atomic<int> m_greatest_common_version{INIT_PROTO_VERSION};
 
+    //! Services offered to this peer.
+    //!
+    //! This is supplied by the parent CConnman during peer connection
+    //! (CConnman::ConnectNode()) from its attribute of the same name.
+    //!
+    //! This is const because there is no protocol defined for renegotiating
+    //! services initially offered to a peer. The set of local services we
+    //! offer should not change after initialization.
+    //!
+    //! An interesting example of this is NODE_NETWORK and initial block
+    //! download: a node which starts up from scratch doesn't have any blocks
+    //! to serve, but still advertises NODE_NETWORK because it will eventually
+    //! fulfill this role after IBD completes. P2P code is written in such a
+    //! way that it can gracefully handle peers who don't make good on their
+    //! service advertisements.
+    const ServiceFlags nLocalServices;
+
     std::list<CNetMessage> vRecvMsg; // Used only by SocketHandler thread
 
     // Our address, as reported by the peer
     CService addrLocal GUARDED_BY(m_addr_local_mutex);
     mutable Mutex m_addr_local_mutex;
 
-    mapMsgTypeSize mapSendBytesPerMsgType GUARDED_BY(cs_vSend);
-    mapMsgTypeSize mapRecvBytesPerMsgType GUARDED_BY(cs_vRecv);
+    mapMsgCmdSize mapSendBytesPerMsgCmd GUARDED_BY(cs_vSend);
+    mapMsgCmdSize mapRecvBytesPerMsgCmd GUARDED_BY(cs_vRecv);
 };
 
 /**
@@ -605,7 +697,7 @@ class NetEventsInterface
 {
 public:
     /** Initialize a peer (setup state, queue any initial messages) */
-    virtual void InitializeNode(CNode& node, ServiceFlags our_services) = 0;
+    virtual void InitializeNode(CNode* pnode) = 0;
 
     /** Handle removal of a peer (clear state) */
     virtual void FinalizeNode(const CNode& node) = 0;
@@ -669,7 +761,7 @@ public:
         bool m_i2p_accept_incoming;
     };
 
-    void Init(const Options& connOptions) EXCLUSIVE_LOCKS_REQUIRED(!m_added_nodes_mutex, !m_total_bytes_sent_mutex)
+    void Init(const Options& connOptions) EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex)
     {
         AssertLockNotHeld(m_total_bytes_sent_mutex);
 
@@ -703,8 +795,7 @@ public:
              bool network_active = true);
 
     ~CConnman();
-
-    bool Start(CScheduler& scheduler, const Options& options) EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex, !m_added_nodes_mutex, !m_addr_fetches_mutex, !mutexMsgProc);
+    bool Start(CScheduler& scheduler, const Options& options) EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex);
 
     void StopThreads();
     void StopNodes();
@@ -714,7 +805,7 @@ public:
         StopNodes();
     };
 
-    void Interrupt() EXCLUSIVE_LOCKS_REQUIRED(!mutexMsgProc);
+    void Interrupt();
     bool GetNetworkActive() const { return fNetworkActive; };
     bool GetUseAddrmanOutgoing() const { return m_use_addrman_outgoing; };
     void SetNetworkActive(bool active);
@@ -766,7 +857,10 @@ public:
     void SetTryNewOutboundPeer(bool flag);
     bool GetTryNewOutboundPeer() const;
 
-    void StartExtraBlockRelayPeers();
+    void StartExtraBlockRelayPeers() {
+        LogPrint(BCLog::NET, "net: enabling extra block-relay-only peers\n");
+        m_start_extra_block_relay_peers = true;
+    }
 
     // Return the number of outbound peers we have in excess of our target (eg,
     // if we previously called SetTryNewOutboundPeer(true), and have since set
@@ -778,9 +872,9 @@ public:
     // Count the number of block-relay-only peers we have over our limit.
     int GetExtraBlockRelayCount() const;
 
-    bool AddNode(const std::string& node) EXCLUSIVE_LOCKS_REQUIRED(!m_added_nodes_mutex);
-    bool RemoveAddedNode(const std::string& node) EXCLUSIVE_LOCKS_REQUIRED(!m_added_nodes_mutex);
-    std::vector<AddedNodeInfo> GetAddedNodeInfo() const EXCLUSIVE_LOCKS_REQUIRED(!m_added_nodes_mutex);
+    bool AddNode(const std::string& node);
+    bool RemoveAddedNode(const std::string& node);
+    std::vector<AddedNodeInfo> GetAddedNodeInfo() const;
 
     /**
      * Attempts to open a connection. Currently only used from tests.
@@ -833,7 +927,7 @@ public:
 
     unsigned int GetReceiveFloodSize() const;
 
-    void WakeMessageHandler() EXCLUSIVE_LOCKS_REQUIRED(!mutexMsgProc);
+    void WakeMessageHandler();
 
     /** Return true if we should disconnect the peer for failing an inactivity check. */
     bool ShouldRunInactivityChecks(const CNode& node, std::chrono::seconds now) const;
@@ -860,11 +954,11 @@ private:
     bool Bind(const CService& addr, unsigned int flags, NetPermissionFlags permissions);
     bool InitBinds(const Options& options);
 
-    void ThreadOpenAddedConnections() EXCLUSIVE_LOCKS_REQUIRED(!m_added_nodes_mutex);
-    void AddAddrFetch(const std::string& strDest) EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex);
-    void ProcessAddrFetch() EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex);
-    void ThreadOpenConnections(std::vector<std::string> connect) EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex, !m_added_nodes_mutex, !m_nodes_mutex);
-    void ThreadMessageHandler() EXCLUSIVE_LOCKS_REQUIRED(!mutexMsgProc);
+    void ThreadOpenAddedConnections();
+    void AddAddrFetch(const std::string& strDest);
+    void ProcessAddrFetch();
+    void ThreadOpenConnections(std::vector<std::string> connect);
+    void ThreadMessageHandler();
     void ThreadI2PAcceptIncoming();
     void AcceptConnection(const ListenSocket& hListenSocket);
 
@@ -889,32 +983,56 @@ private:
     /**
      * Generate a collection of sockets to check for IO readiness.
      * @param[in] nodes Select from these nodes' sockets.
-     * @return sockets to check for readiness
+     * @param[out] recv_set Sockets to check for read readiness.
+     * @param[out] send_set Sockets to check for write readiness.
+     * @param[out] error_set Sockets to check for errors.
+     * @return true if at least one socket is to be checked (the returned set is not empty)
      */
-    Sock::EventsPerSock GenerateWaitSockets(Span<CNode* const> nodes);
+    bool GenerateSelectSet(const std::vector<CNode*>& nodes,
+                           std::set<SOCKET>& recv_set,
+                           std::set<SOCKET>& send_set,
+                           std::set<SOCKET>& error_set);
+
+    /**
+     * Check which sockets are ready for IO.
+     * @param[in] nodes Select from these nodes' sockets.
+     * @param[out] recv_set Sockets which are ready for read.
+     * @param[out] send_set Sockets which are ready for write.
+     * @param[out] error_set Sockets which have errors.
+     * This calls `GenerateSelectSet()` to gather a list of sockets to check.
+     */
+    void SocketEvents(const std::vector<CNode*>& nodes,
+                      std::set<SOCKET>& recv_set,
+                      std::set<SOCKET>& send_set,
+                      std::set<SOCKET>& error_set);
 
     /**
      * Check connected and listening sockets for IO readiness and process them accordingly.
      */
-    void SocketHandler() EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex, !mutexMsgProc);
+    void SocketHandler() EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex);
 
     /**
      * Do the read/write for connected sockets that are ready for IO.
-     * @param[in] nodes Nodes to process. The socket of each node is checked against `what`.
-     * @param[in] events_per_sock Sockets that are ready for IO.
+     * @param[in] nodes Nodes to process. The socket of each node is checked against
+     * `recv_set`, `send_set` and `error_set`.
+     * @param[in] recv_set Sockets that are ready for read.
+     * @param[in] send_set Sockets that are ready for send.
+     * @param[in] error_set Sockets that have an exceptional condition (error).
      */
     void SocketHandlerConnected(const std::vector<CNode*>& nodes,
-                                const Sock::EventsPerSock& events_per_sock)
-        EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex, !mutexMsgProc);
+                                const std::set<SOCKET>& recv_set,
+                                const std::set<SOCKET>& send_set,
+                                const std::set<SOCKET>& error_set)
+        EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex);
 
     /**
      * Accept incoming connections, one from each read-ready listening socket.
-     * @param[in] events_per_sock Sockets that are ready for IO.
+     * @param[in] recv_set Sockets that are ready for read.
      */
-    void SocketHandlerListening(const Sock::EventsPerSock& events_per_sock);
+    void SocketHandlerListening(const std::set<SOCKET>& recv_set);
 
-    void ThreadSocketHandler() EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex, !mutexMsgProc);
-    void ThreadDNSAddressSeed() EXCLUSIVE_LOCKS_REQUIRED(!m_addr_fetches_mutex, !m_nodes_mutex);
+    void ThreadSocketHandler() EXCLUSIVE_LOCKS_REQUIRED(!m_total_bytes_sent_mutex);
+    void ThreadDNSAddressSeed();
 
     uint64_t CalculateKeyedNetGroup(const CAddress& ad) const;
 
@@ -1015,14 +1133,16 @@ private:
     std::map<uint64_t, CachedAddrResponse> m_addr_response_caches;
 
     /**
-     * Services this node offers.
+     * Services this instance offers.
      *
-     * This data is replicated in each Peer instance we create.
+     * This data is replicated in each CNode instance we create during peer
+     * connection (in ConnectNode()) under a member also called
+     * nLocalServices.
      *
      * This data is not marked const, but after being set it should not
-     * change.
+     * change. See the note in CNode::nLocalServices documentation.
      *
-     * \sa Peer::our_services
+     * \sa CNode::nLocalServices
      */
     ServiceFlags nLocalServices;
 
@@ -1153,5 +1273,55 @@ extern std::function<void(const CAddress& addr,
                           Span<const unsigned char> data,
                           bool is_incoming)>
     CaptureMessage;
+
+struct NodeEvictionCandidate
+{
+    NodeId id;
+    std::chrono::seconds m_connected;
+    std::chrono::microseconds m_min_ping_time;
+    std::chrono::seconds m_last_block_time;
+    std::chrono::seconds m_last_tx_time;
+    bool fRelevantServices;
+    bool m_relay_txs;
+    bool fBloomFilter;
+    uint64_t nKeyedNetGroup;
+    bool prefer_evict;
+    bool m_is_local;
+    Network m_network;
+};
+
+/**
+ * Select an inbound peer to evict after filtering out (protecting) peers having
+ * distinct, difficult-to-forge characteristics. The protection logic picks out
+ * fixed numbers of desirable peers per various criteria, followed by (mostly)
+ * ratios of desirable or disadvantaged peers. If any eviction candidates
+ * remain, the selection logic chooses a peer to evict.
+ */
+[[nodiscard]] std::optional<NodeId> SelectNodeToEvict(std::vector<NodeEvictionCandidate>&& vEvictionCandidates);
+
+/** Protect desirable or disadvantaged inbound peers from eviction by ratio.
+ *
+ * This function protects half of the peers which have been connected the
+ * longest, to replicate the non-eviction implicit behavior and preclude attacks
+ * that start later.
+ *
+ * Half of these protected spots (1/4 of the total) are reserved for the
+ * following categories of peers, sorted by longest uptime, even if they're not
+ * longest uptime overall:
+ *
+ * - onion peers connected via our tor control service
+ *
+ * - localhost peers, as manually configured hidden services not using
+ *   `-bind=addr[:port]=onion` will not be detected as inbound onion connections
+ *
+ * - I2P peers
+ *
+ * - CJDNS peers
+ *
+ * This helps protect these privacy network peers, which tend to be otherwise
+ * disadvantaged under our eviction criteria for their higher min ping times
+ * relative to IPv4/IPv6 peers, and favorise the diversity of peer connections.
+ */
+void ProtectEvictionCandidatesByRatio(std::vector<NodeEvictionCandidate>& vEvictionCandidates);
 
 #endif // QOGECOIN_NET_H

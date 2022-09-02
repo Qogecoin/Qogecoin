@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2018-2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -49,9 +49,7 @@ KNOWN_VIOLATIONS = [
     "src/test/fuzz/locale.cpp:.*setlocale",
     "src/test/fuzz/string.cpp:.*strtol",
     "src/test/fuzz/string.cpp:.*strtoul",
-    "src/test/util_tests.cpp:.*strtoll",
-    "src/wallet/bdb.cpp:.*DbEnv::strerror",  # False positive
-    "src/util/syserror.cpp:.*strerror",      # Outside this function use `SysErrorString`
+    "src/test/util_tests.cpp:.*strtoll"
 ]
 
 REGEXP_EXTERNAL_DEPENDENCIES_EXCLUSIONS = [
@@ -60,6 +58,7 @@ REGEXP_EXTERNAL_DEPENDENCIES_EXCLUSIONS = [
     "src/secp256k1/",
     "src/minisketch/",
     "src/tinyformat.h",
+    "src/univalue/"
 ]
 
 LOCALE_DEPENDENT_FUNCTIONS = [
@@ -145,7 +144,7 @@ LOCALE_DEPENDENT_FUNCTIONS = [
     "strcasecmp",
     "strcasestr",
     "strcoll",      # LC_COLLATE
-    "strerror",
+    #"strerror",
     "strfmon",
     "strftime",     # LC_TIME
     "strncasecmp",
@@ -219,7 +218,7 @@ LOCALE_DEPENDENT_FUNCTIONS = [
 def find_locale_dependent_function_uses():
     regexp_locale_dependent_functions = "|".join(LOCALE_DEPENDENT_FUNCTIONS)
     exclude_args = [":(exclude)" + excl for excl in REGEXP_EXTERNAL_DEPENDENCIES_EXCLUSIONS]
-    git_grep_command = ["git", "grep", "-E", "[^a-zA-Z0-9_\\`'\"<>](" +  regexp_locale_dependent_functions + ")(_r|_s)?[^a-zA-Z0-9_\\`'\"<>]", "--", "*.cpp", "*.h"] + exclude_args
+    git_grep_command = ["git", "grep", "-E", "[^a-zA-Z0-9_\\`'\"<>](" +  regexp_locale_dependent_functions + "(_r|_s)?)[^a-zA-Z0-9_\\`'\"<>]", "--", "*.cpp", "*.h"] + exclude_args
     git_grep_output = list()
 
     try:

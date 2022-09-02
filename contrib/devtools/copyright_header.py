@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2016-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -35,6 +35,7 @@ EXCLUDE_DIRS = [
     "src/leveldb/",
     "src/minisketch",
     "src/secp256k1/",
+    "src/univalue/",
     "src/crc32c/",
 ]
 
@@ -93,7 +94,7 @@ def compile_copyright_regex(copyright_style, year_style, name):
 
 EXPECTED_HOLDER_NAMES = [
     r"Satoshi Nakamoto",
-    r"The Qogecoin and Qogecoin Core Authors",
+    r"The Bitcoin and Qogecoin Core Authors",
     r"BitPay Inc\.",
     r"University of Illinois at Urbana-Champaign\.",
     r"Pieter Wuille",
@@ -319,13 +320,15 @@ def get_most_recent_git_change_year(filename):
 ################################################################################
 
 def read_file_lines(filename):
-    with open(filename, 'r', encoding="utf8") as f:
-        file_lines = f.readlines()
+    f = open(filename, 'r', encoding="utf8")
+    file_lines = f.readlines()
+    f.close()
     return file_lines
 
 def write_file_lines(filename, file_lines):
-    with open(filename, 'w', encoding="utf8") as f:
-        f.write(''.join(file_lines))
+    f = open(filename, 'w', encoding="utf8")
+    f.write(''.join(file_lines))
+    f.close()
 
 ################################################################################
 # update header years execution
@@ -334,7 +337,7 @@ def write_file_lines(filename, file_lines):
 COPYRIGHT = r'Copyright \(c\)'
 YEAR = "20[0-9][0-9]"
 YEAR_RANGE = '(%s)(-%s)?' % (YEAR, YEAR)
-HOLDER = 'The Qogecoin and Qogecoin Core Authors'
+HOLDER = 'The Bitcoin and Qogecoin Core Authors'
 UPDATEABLE_LINE_COMPILED = re.compile(' '.join([COPYRIGHT, YEAR_RANGE, HOLDER]))
 
 def get_updatable_copyright_line(file_lines):
@@ -399,24 +402,24 @@ def exec_update_header_year(base_directory):
 ################################################################################
 
 UPDATE_USAGE = """
-Updates all the copyright headers of "The Qogecoin and Qogecoin Core Authors" which were
+Updates all the copyright headers of "The Bitcoin and Qogecoin Core Authors" which were
 changed in a year more recent than is listed. For example:
 
-// Copyright (c) <firstYear>-<lastYear> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <firstYear>-<lastYear> The Bitcoin and Qogecoin Core Authors
 
 will be updated to:
 
-// Copyright (c) <firstYear>-<lastModifiedYear> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <firstYear>-<lastModifiedYear> The Bitcoin and Qogecoin Core Authors
 
 where <lastModifiedYear> is obtained from the 'git log' history.
 
 This subcommand also handles copyright headers that have only a single year. In those cases:
 
-// Copyright (c) <year> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <year> The Bitcoin and Qogecoin Core Authors
 
 will be updated to:
 
-// Copyright (c) <year>-<lastModifiedYear> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <year>-<lastModifiedYear> The Bitcoin and Qogecoin Core Authors
 
 where the update is appropriate.
 
@@ -449,7 +452,7 @@ def get_header_lines(header, start_year, end_year):
     return [line + '\n' for line in lines]
 
 CPP_HEADER = '''
-// Copyright (c) %s The Qogecoin and Qogecoin Core Authors
+// Copyright (c) %s The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 '''
@@ -458,7 +461,7 @@ def get_cpp_header_lines_to_insert(start_year, end_year):
     return reversed(get_header_lines(CPP_HEADER, start_year, end_year))
 
 SCRIPT_HEADER = '''
-# Copyright (c) %s The Qogecoin and Qogecoin Core Authors
+# Copyright (c) %s The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 '''
@@ -513,7 +516,7 @@ def insert_cpp_header(filename, file_lines, start_year, end_year):
 def exec_insert_header(filename, style):
     file_lines = read_file_lines(filename)
     if file_already_has_core_copyright(file_lines):
-        sys.exit('*** %s already has a copyright by The Qogecoin and Qogecoin Core Authors'
+        sys.exit('*** %s already has a copyright by The Bitcoin and Qogecoin Core Authors'
                  % (filename))
     start_year, end_year = get_git_change_year_range(filename)
     if style in ['python', 'shell']:
@@ -526,7 +529,7 @@ def exec_insert_header(filename, style):
 ################################################################################
 
 INSERT_USAGE = """
-Inserts a copyright header for "The Qogecoin and Qogecoin Core Authors" at the top of the
+Inserts a copyright header for "The Bitcoin and Qogecoin Core Authors" at the top of the
 file in either Python or C++ style as determined by the file extension. If the
 file is a Python file and it has a '#!' starting the first line, the header is
 inserted in the line below it.
@@ -540,7 +543,7 @@ where <year_introduced> is according to the 'git log' history. If
 
 "<current_year>"
 
-If the file already has a copyright for "The Qogecoin and Qogecoin Core Authors", the
+If the file already has a copyright for "The Bitcoin and Qogecoin Core Authors", the
 script will exit.
 
 Usage:

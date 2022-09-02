@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,67 +17,69 @@ Type SanitizeType(Type e) {
     int num_types = (e << "K"_mst) + (e << "V"_mst) + (e << "B"_mst) + (e << "W"_mst);
     if (num_types == 0) return ""_mst; // No valid type, don't care about the rest
     assert(num_types == 1); // K, V, B, W all conflict with each other
-    assert(!(e << "z"_mst) || !(e << "o"_mst)); // z conflicts with o
-    assert(!(e << "n"_mst) || !(e << "z"_mst)); // n conflicts with z
-    assert(!(e << "n"_mst) || !(e << "W"_mst)); // n conflicts with W
-    assert(!(e << "V"_mst) || !(e << "d"_mst)); // V conflicts with d
-    assert(!(e << "K"_mst) ||  (e << "u"_mst)); // K implies u
-    assert(!(e << "V"_mst) || !(e << "u"_mst)); // V conflicts with u
-    assert(!(e << "e"_mst) || !(e << "f"_mst)); // e conflicts with f
-    assert(!(e << "e"_mst) ||  (e << "d"_mst)); // e implies d
-    assert(!(e << "V"_mst) || !(e << "e"_mst)); // V conflicts with e
-    assert(!(e << "d"_mst) || !(e << "f"_mst)); // d conflicts with f
-    assert(!(e << "V"_mst) ||  (e << "f"_mst)); // V implies f
-    assert(!(e << "K"_mst) ||  (e << "s"_mst)); // K implies s
-    assert(!(e << "z"_mst) ||  (e << "m"_mst)); // z implies m
+    bool ok = // Work around a GCC 4.8 bug that breaks user-defined literals in macro calls.
+        (!(e << "z"_mst) || !(e << "o"_mst)) && // z conflicts with o
+        (!(e << "n"_mst) || !(e << "z"_mst)) && // n conflicts with z
+        (!(e << "n"_mst) || !(e << "W"_mst)) && // n conflicts with W
+        (!(e << "V"_mst) || !(e << "d"_mst)) && // V conflicts with d
+        (!(e << "K"_mst) ||  (e << "u"_mst)) && // K implies u
+        (!(e << "V"_mst) || !(e << "u"_mst)) && // V conflicts with u
+        (!(e << "e"_mst) || !(e << "f"_mst)) && // e conflicts with f
+        (!(e << "e"_mst) ||  (e << "d"_mst)) && // e implies d
+        (!(e << "V"_mst) || !(e << "e"_mst)) && // V conflicts with e
+        (!(e << "d"_mst) || !(e << "f"_mst)) && // d conflicts with f
+        (!(e << "V"_mst) ||  (e << "f"_mst)) && // V implies f
+        (!(e << "K"_mst) ||  (e << "s"_mst)) && // K implies s
+        (!(e << "z"_mst) ||  (e << "m"_mst)); // z implies m
+    assert(ok);
     return e;
 }
 
-Type ComputeType(Fragment fragment, Type x, Type y, Type z, const std::vector<Type>& sub_types, uint32_t k, size_t data_size, size_t n_subs, size_t n_keys) {
+Type ComputeType(Fragment nodetype, Type x, Type y, Type z, const std::vector<Type>& sub_types, uint32_t k, size_t data_size, size_t n_subs, size_t n_keys) {
     // Sanity check on data
-    if (fragment == Fragment::SHA256 || fragment == Fragment::HASH256) {
+    if (nodetype == Fragment::SHA256 || nodetype == Fragment::HASH256) {
         assert(data_size == 32);
-    } else if (fragment == Fragment::RIPEMD160 || fragment == Fragment::HASH160) {
+    } else if (nodetype == Fragment::RIPEMD160 || nodetype == Fragment::HASH160) {
         assert(data_size == 20);
     } else {
         assert(data_size == 0);
     }
     // Sanity check on k
-    if (fragment == Fragment::OLDER || fragment == Fragment::AFTER) {
+    if (nodetype == Fragment::OLDER || nodetype == Fragment::AFTER) {
         assert(k >= 1 && k < 0x80000000UL);
-    } else if (fragment == Fragment::MULTI) {
+    } else if (nodetype == Fragment::MULTI) {
         assert(k >= 1 && k <= n_keys);
-    } else if (fragment == Fragment::THRESH) {
+    } else if (nodetype == Fragment::THRESH) {
         assert(k >= 1 && k <= n_subs);
     } else {
         assert(k == 0);
     }
     // Sanity check on subs
-    if (fragment == Fragment::AND_V || fragment == Fragment::AND_B || fragment == Fragment::OR_B ||
-        fragment == Fragment::OR_C || fragment == Fragment::OR_I || fragment == Fragment::OR_D) {
+    if (nodetype == Fragment::AND_V || nodetype == Fragment::AND_B || nodetype == Fragment::OR_B ||
+        nodetype == Fragment::OR_C || nodetype == Fragment::OR_I || nodetype == Fragment::OR_D) {
         assert(n_subs == 2);
-    } else if (fragment == Fragment::ANDOR) {
+    } else if (nodetype == Fragment::ANDOR) {
         assert(n_subs == 3);
-    } else if (fragment == Fragment::WRAP_A || fragment == Fragment::WRAP_S || fragment == Fragment::WRAP_C ||
-               fragment == Fragment::WRAP_D || fragment == Fragment::WRAP_V || fragment == Fragment::WRAP_J ||
-               fragment == Fragment::WRAP_N) {
+    } else if (nodetype == Fragment::WRAP_A || nodetype == Fragment::WRAP_S || nodetype == Fragment::WRAP_C ||
+               nodetype == Fragment::WRAP_D || nodetype == Fragment::WRAP_V || nodetype == Fragment::WRAP_J ||
+               nodetype == Fragment::WRAP_N) {
         assert(n_subs == 1);
-    } else if (fragment != Fragment::THRESH) {
+    } else if (nodetype != Fragment::THRESH) {
         assert(n_subs == 0);
     }
     // Sanity check on keys
-    if (fragment == Fragment::PK_K || fragment == Fragment::PK_H) {
+    if (nodetype == Fragment::PK_K || nodetype == Fragment::PK_H) {
         assert(n_keys == 1);
-    } else if (fragment == Fragment::MULTI) {
+    } else if (nodetype == Fragment::MULTI) {
         assert(n_keys >= 1 && n_keys <= 20);
     } else {
         assert(n_keys == 0);
     }
 
-    // Below is the per-fragment logic for computing the expression types.
+    // Below is the per-nodetype logic for computing the expression types.
     // It heavily relies on Type's << operator (where "X << a_mst" means
     // "X has all properties listed in a").
-    switch (fragment) {
+    switch (nodetype) {
         case Fragment::PK_K: return "Konudemsxk"_mst;
         case Fragment::PK_H: return "Knudemsxk"_mst;
         case Fragment::OLDER: return
@@ -245,10 +247,11 @@ Type ComputeType(Fragment fragment, Type x, Type y, Type z, const std::vector<Ty
             }
     }
     assert(false);
+    return ""_mst;
 }
 
-size_t ComputeScriptLen(Fragment fragment, Type sub0typ, size_t subsize, uint32_t k, size_t n_subs, size_t n_keys) {
-    switch (fragment) {
+size_t ComputeScriptLen(Fragment nodetype, Type sub0typ, size_t subsize, uint32_t k, size_t n_subs, size_t n_keys) {
+    switch (nodetype) {
         case Fragment::JUST_1:
         case Fragment::JUST_0: return 1;
         case Fragment::PK_K: return 34;
@@ -259,7 +262,7 @@ size_t ComputeScriptLen(Fragment fragment, Type sub0typ, size_t subsize, uint32_
         case Fragment::SHA256: return 4 + 2 + 33;
         case Fragment::HASH160:
         case Fragment::RIPEMD160: return 4 + 2 + 21;
-        case Fragment::MULTI: return 1 + BuildScript(n_keys).size() + BuildScript(k).size() + 34 * n_keys;
+        case Fragment::MULTI: return 3 + (n_keys > 16) + (k > 16) + 34 * n_keys;
         case Fragment::AND_V: return subsize;
         case Fragment::WRAP_V: return subsize + (sub0typ << "x"_mst);
         case Fragment::WRAP_S:
@@ -277,17 +280,19 @@ size_t ComputeScriptLen(Fragment fragment, Type sub0typ, size_t subsize, uint32_
         case Fragment::THRESH: return subsize + n_subs + BuildScript(k).size();
     }
     assert(false);
+    return 0;
 }
 
-std::optional<std::vector<Opcode>> DecomposeScript(const CScript& script)
+bool DecomposeScript(const CScript& script, std::vector<std::pair<opcodetype, std::vector<unsigned char>>>& out)
 {
-    std::vector<Opcode> out;
+    out.clear();
     CScript::const_iterator it = script.begin(), itend = script.end();
     while (it != itend) {
         std::vector<unsigned char> push_data;
         opcodetype opcode;
         if (!script.GetOp(it, opcode, push_data)) {
-            return {};
+            out.clear();
+            return false;
         } else if (opcode >= OP_1 && opcode <= OP_16) {
             // Deal with OP_n (GetOp does not turn them into pushes).
             push_data.assign(1, CScript::DecodeOP_N(opcode));
@@ -304,28 +309,30 @@ std::optional<std::vector<Opcode>> DecomposeScript(const CScript& script)
             out.emplace_back(OP_EQUAL, std::vector<unsigned char>());
             opcode = OP_VERIFY;
         } else if (IsPushdataOp(opcode)) {
-            if (!CheckMinimalPush(push_data, opcode)) return {};
+            if (!CheckMinimalPush(push_data, opcode)) return false;
         } else if (it != itend && (opcode == OP_CHECKSIG || opcode == OP_CHECKMULTISIG || opcode == OP_EQUAL) && (*it == OP_VERIFY)) {
             // Rule out non minimal VERIFY sequences
-            return {};
+            return false;
         }
         out.emplace_back(opcode, std::move(push_data));
     }
     std::reverse(out.begin(), out.end());
-    return out;
+    return true;
 }
 
-std::optional<int64_t> ParseScriptNumber(const Opcode& in) {
+bool ParseScriptNumber(const std::pair<opcodetype, std::vector<unsigned char>>& in, int64_t& k) {
     if (in.first == OP_0) {
-        return 0;
+        k = 0;
+        return true;
     }
     if (!in.second.empty()) {
-        if (IsPushdataOp(in.first) && !CheckMinimalPush(in.second, in.first)) return {};
+        if (IsPushdataOp(in.first) && !CheckMinimalPush(in.second, in.first)) return false;
         try {
-            return CScriptNum(in.second, true).GetInt64();
+            k = CScriptNum(in.second, true).GetInt64();
+            return true;
         } catch(const scriptnum_error&) {}
     }
-    return {};
+    return false;
 }
 
 int FindNextChar(Span<const char> sp, const char m)

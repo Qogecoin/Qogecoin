@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -68,6 +68,7 @@ FUZZ_TARGET_INIT(net, initialize_net)
     (void)node.GetAddrLocal();
     (void)node.GetId();
     (void)node.GetLocalNonce();
+    (void)node.GetLocalServices();
     const int ref_count = node.GetRefCount();
     assert(ref_count >= 0);
     (void)node.GetCommonVersion();

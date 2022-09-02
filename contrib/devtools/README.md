@@ -39,31 +39,31 @@ Specifying `verbose` will list the full filenames of files of each category.
 
 copyright\_header.py update \<base\_directory\> [verbose]
 ---------------------------------------------------------
-Updates all the copyright headers of `The Qogecoin and Qogecoin Core Authors` which were
+Updates all the copyright headers of `The Bitcoin and Qogecoin Core Authors` which were
 changed in a year more recent than is listed. For example:
 ```
-// Copyright (c) <firstYear>-<lastYear> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <firstYear>-<lastYear> The Bitcoin and Qogecoin Core Authors
 ```
 will be updated to:
 ```
-// Copyright (c) <firstYear>-<lastModifiedYear> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <firstYear>-<lastModifiedYear> The Bitcoin and Qogecoin Core Authors
 ```
 where `<lastModifiedYear>` is obtained from the `git log` history.
 
 This subcommand also handles copyright headers that have only a single year. In
 those cases:
 ```
-// Copyright (c) <year> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <year> The Bitcoin and Qogecoin Core Authors
 ```
 will be updated to:
 ```
-// Copyright (c) <year>-<lastModifiedYear> The Qogecoin and Qogecoin Core Authors
+// Copyright (c) <year>-<lastModifiedYear> The Bitcoin and Qogecoin Core Authors
 ```
 where the update is appropriate.
 
 copyright\_header.py insert \<file\>
 ------------------------------------
-Inserts a copyright header for `The Qogecoin and Qogecoin Core Authors` at the top of the
+Inserts a copyright header for `The Bitcoin and Qogecoin Core Authors` at the top of the
 file in either Python or C++ style as determined by the file extension. If the
 file is a Python file and it has  `#!` starting the first line, the header is
 inserted in the line below it.
@@ -73,7 +73,7 @@ The copyright dates will be set to be `<year_introduced>-<current_year>` where
 `<year_introduced>` is equal to `<current_year>`, it will be set as a single
 year rather than two hyphenated years.
 
-If the file already has a copyright for `The Qogecoin and Qogecoin Core Authors`, the
+If the file already has a copyright for `The Bitcoin and Qogecoin Core Authors`, the
 script will exit.
 
 gen-manpages.py
@@ -88,21 +88,6 @@ example:
 
 ```bash
 BUILDDIR=$PWD/build contrib/devtools/gen-manpages.py
-```
-
-gen-qogecoin-conf.sh
-===================
-
-Generates a qogecoin.conf file in `share/examples/` by parsing the output from `qogecoind --help`. This script is run during the
-release process to include a qogecoin.conf with the release binaries and can also be run by users to generate a file locally.
-When generating a file as part of the release process, make sure to commit the changes after running the script.
-
-With in-tree builds this tool can be run from any directory within the
-repository. To use this tool with out-of-tree builds set `BUILDDIR`. For
-example:
-
-```bash
-BUILDDIR=$PWD/build contrib/devtools/gen-qogecoin-conf.sh
 ```
 
 security-check.py and test-security-check.py

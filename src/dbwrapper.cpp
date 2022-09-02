@@ -1,38 +1,25 @@
-// Copyright (c) 2012-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2012-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <dbwrapper.h>
 
-#include <fs.h>
-#include <logging.h>
+#include <memory>
 #include <random.h>
-#include <tinyformat.h>
-#include <util/strencodings.h>
-#include <util/system.h>
 
-#include <algorithm>
-#include <cassert>
-#include <cstdarg>
-#include <cstdint>
-#include <cstdio>
 #include <leveldb/cache.h>
-#include <leveldb/db.h>
 #include <leveldb/env.h>
 #include <leveldb/filter_policy.h>
-#include <leveldb/helpers/memenv/memenv.h>
-#include <leveldb/iterator.h>
-#include <leveldb/options.h>
-#include <leveldb/status.h>
-#include <memory>
-#include <optional>
+#include <memenv.h>
+#include <stdint.h>
+#include <algorithm>
 
 class CQogecoinLevelDBLogger : public leveldb::Logger {
 public:
     // This code is adapted from posix_logger.h, which is why it is using vsprintf.
     // Please do not do this in normal code
     void Logv(const char * format, va_list ap) override {
-            if (!LogAcceptCategory(BCLog::LEVELDB, BCLog::Level::Debug)) {
+            if (!LogAcceptCategory(BCLog::LEVELDB)) {
                 return;
             }
             char buffer[500];
@@ -76,7 +63,7 @@ public:
 
                 assert(p <= limit);
                 base[std::min(bufsize - 1, (int)(p - base))] = '\0';
-                LogPrintLevel(BCLog::LEVELDB, BCLog::Level::Debug, "%s", base);  /* Continued */
+                LogPrintf("leveldb: %s", base);  /* Continued */
                 if (base != buffer) {
                     delete[] base;
                 }
@@ -199,7 +186,7 @@ CDBWrapper::~CDBWrapper()
 
 bool CDBWrapper::WriteBatch(CDBBatch& batch, bool fSync)
 {
-    const bool log_memory = LogAcceptCategory(BCLog::LEVELDB, BCLog::Level::Debug);
+    const bool log_memory = LogAcceptCategory(BCLog::LEVELDB);
     double mem_before = 0;
     if (log_memory) {
         mem_before = DynamicMemoryUsage() / 1024.0 / 1024;

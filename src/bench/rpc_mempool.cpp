@@ -1,11 +1,9 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <bench/bench.h>
-#include <chainparamsbase.h>
 #include <rpc/mempool.h>
-#include <test/util/setup_common.h>
 #include <txmempool.h>
 
 #include <univalue.h>
@@ -19,8 +17,7 @@ static void AddTx(const CTransactionRef& tx, const CAmount& fee, CTxMemPool& poo
 
 static void RpcMempool(benchmark::Bench& bench)
 {
-    const auto testing_setup = MakeNoLogFileContext<const ChainTestingSetup>(CBaseChainParams::MAIN);
-    CTxMemPool& pool = *Assert(testing_setup->m_node.mempool);
+    CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
 
     for (int i = 0; i < 1000; ++i) {

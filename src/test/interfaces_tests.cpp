@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +17,6 @@ BOOST_FIXTURE_TEST_SUITE(interfaces_tests, TestChain100Setup)
 
 BOOST_AUTO_TEST_CASE(findBlock)
 {
-    LOCK(Assert(m_node.chainman)->GetMutex());
     auto& chain = m_node.chain;
     const CChain& active = Assert(m_node.chainman)->ActiveChain();
 
@@ -62,7 +61,6 @@ BOOST_AUTO_TEST_CASE(findBlock)
 
 BOOST_AUTO_TEST_CASE(findFirstBlockWithTimeAndHeight)
 {
-    LOCK(Assert(m_node.chainman)->GetMutex());
     auto& chain = m_node.chain;
     const CChain& active = Assert(m_node.chainman)->ActiveChain();
     uint256 hash;
@@ -75,7 +73,6 @@ BOOST_AUTO_TEST_CASE(findFirstBlockWithTimeAndHeight)
 
 BOOST_AUTO_TEST_CASE(findAncestorByHeight)
 {
-    LOCK(Assert(m_node.chainman)->GetMutex());
     auto& chain = m_node.chain;
     const CChain& active = Assert(m_node.chainman)->ActiveChain();
     uint256 hash;
@@ -86,7 +83,6 @@ BOOST_AUTO_TEST_CASE(findAncestorByHeight)
 
 BOOST_AUTO_TEST_CASE(findAncestorByHash)
 {
-    LOCK(Assert(m_node.chainman)->GetMutex());
     auto& chain = m_node.chain;
     const CChain& active = Assert(m_node.chainman)->ActiveChain();
     int height = -1;
@@ -98,7 +94,7 @@ BOOST_AUTO_TEST_CASE(findAncestorByHash)
 BOOST_AUTO_TEST_CASE(findCommonAncestor)
 {
     auto& chain = m_node.chain;
-    const CChain& active = WITH_LOCK(Assert(m_node.chainman)->GetMutex(), return Assert(m_node.chainman)->ActiveChain());
+    const CChain& active = Assert(m_node.chainman)->ActiveChain();
     auto* orig_tip = active.Tip();
     for (int i = 0; i < 10; ++i) {
         BlockValidationState state;

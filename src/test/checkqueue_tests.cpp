@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2012-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -92,7 +92,7 @@ struct MemoryCheck {
     {
         return true;
     }
-    MemoryCheck() = default;
+    MemoryCheck(){};
     MemoryCheck(const MemoryCheck& x)
     {
         // We have to do this to make sure that destructor calls are paired
@@ -123,7 +123,7 @@ struct FrozenCleanupCheck {
     {
         return true;
     }
-    FrozenCleanupCheck() = default;
+    FrozenCleanupCheck() {}
     ~FrozenCleanupCheck()
     {
         if (should_freeze) {

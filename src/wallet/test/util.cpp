@@ -1,4 +1,4 @@
-// Copyright (c) 2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -38,7 +38,7 @@ std::unique_ptr<CWallet> CreateSyncedWallet(interfaces::Chain& chain, CChain& cc
     }
     WalletRescanReserver reserver(*wallet);
     reserver.reserve();
-    CWallet::ScanResult result = wallet->ScanForWalletTransactions(cchain.Genesis()->GetBlockHash(), /*start_height=*/0, /*max_height=*/{}, reserver, /*fUpdate=*/false, /*save_progress=*/false);
+    CWallet::ScanResult result = wallet->ScanForWalletTransactions(cchain.Genesis()->GetBlockHash(), 0 /* start_height */, {} /* max_height */, reserver, false /* update */);
     BOOST_CHECK_EQUAL(result.status, CWallet::ScanResult::SUCCESS);
     BOOST_CHECK_EQUAL(result.last_scanned_block, cchain.Tip()->GetBlockHash());
     BOOST_CHECK_EQUAL(*result.last_scanned_height, cchain.Height());

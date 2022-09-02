@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2016-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the bumpfee RPC.
@@ -23,7 +23,7 @@ from test_framework.blocktools import (
     send_to_witness,
 )
 from test_framework.messages import (
-    MAX_BIP125_RBF_SEQUENCE,
+    BIP125_SEQUENCE_NUMBER,
 )
 from test_framework.test_framework import QogecoinTestFramework
 from test_framework.util import (
@@ -86,7 +86,7 @@ class BumpFeeTest(QogecoinTestFramework):
         self.test_invalid_parameters(rbf_node, peer_node, dest_address)
         test_segwit_bumpfee_succeeds(self, rbf_node, dest_address)
         test_nonrbf_bumpfee_fails(self, peer_node, dest_address)
-        test_notmine_bumpfee(self, rbf_node, peer_node, dest_address)
+        test_notmine_bumpfee_fails(self, rbf_node, peer_node, dest_address)
         test_bumpfee_with_descendant_fails(self, rbf_node, rbf_node_address, dest_address)
         test_dust_to_fee(self, rbf_node, dest_address)
         test_watchonly_psbt(self, peer_node, rbf_node, dest_address)
@@ -212,7 +212,7 @@ def test_segwit_bumpfee_succeeds(self, rbf_node, dest_address):
     rbfraw = rbf_node.createrawtransaction([{
         'txid': segwitid,
         'vout': 0,
-        "sequence": MAX_BIP125_RBF_SEQUENCE
+        "sequence": BIP125_SEQUENCE_NUMBER
     }], {dest_address: Decimal("0.0005"),
          rbf_node.getrawchangeaddress(): Decimal("0.0003")})
     rbfsigned = rbf_node.signrawtransactionwithwallet(rbfraw)
@@ -232,7 +232,7 @@ def test_nonrbf_bumpfee_fails(self, peer_node, dest_address):
     self.clear_mempool()
 
 
-def test_notmine_bumpfee(self, rbf_node, peer_node, dest_address):
+def test_notmine_bumpfee_fails(self, rbf_node, peer_node, dest_address):
     self.log.info('Test that it cannot bump fee if non-owned inputs are included')
     # here, the rbftx has a peer_node coin and then adds a rbf_node input
     # Note that this test depends upon the RPC code checking input ownership prior to change outputs
@@ -243,34 +243,15 @@ def test_notmine_bumpfee(self, rbf_node, peer_node, dest_address):
         "txid": utxo["txid"],
         "vout": utxo["vout"],
         "address": utxo["address"],
-        "sequence": MAX_BIP125_RBF_SEQUENCE
+        "sequence": BIP125_SEQUENCE_NUMBER
     } for utxo in utxos]
     output_val = sum(utxo["amount"] for utxo in utxos) - fee
     rawtx = rbf_node.createrawtransaction(inputs, {dest_address: output_val})
     signedtx = rbf_node.signrawtransactionwithwallet(rawtx)
     signedtx = peer_node.signrawtransactionwithwallet(signedtx["hex"])
     rbfid = rbf_node.sendrawtransaction(signedtx["hex"])
-    entry = rbf_node.getmempoolentry(rbfid)
-    old_fee = entry["fees"]["base"]
-    old_feerate = int(old_fee / entry["vsize"] * Decimal(1e8))
     assert_raises_rpc_error(-4, "Transaction contains inputs that don't belong to this wallet",
                             rbf_node.bumpfee, rbfid)
-
-    def finish_psbtbumpfee(psbt):
-        psbt = rbf_node.walletprocesspsbt(psbt)
-        psbt = peer_node.walletprocesspsbt(psbt["psbt"])
-        final = rbf_node.finalizepsbt(psbt["psbt"])
-        res = rbf_node.testmempoolaccept([final["hex"]])
-        assert res[0]["allowed"]
-        assert_greater_than(res[0]["fees"]["base"], old_fee)
-
-    self.log.info("Test that psbtbumpfee works for non-owned inputs")
-    psbt = rbf_node.psbtbumpfee(txid=rbfid)
-    finish_psbtbumpfee(psbt["psbt"])
-
-    psbt = rbf_node.psbtbumpfee(txid=rbfid, options={"fee_rate": old_feerate + 10})
-    finish_psbtbumpfee(psbt["psbt"])
-
     self.clear_mempool()
 
 
@@ -597,7 +578,7 @@ def test_change_script_match(self, rbf_node, dest_address):
 
 def spend_one_input(node, dest_address, change_size=Decimal("0.00049000")):
     tx_input = dict(
-        sequence=MAX_BIP125_RBF_SEQUENCE, **next(u for u in node.listunspent() if u["amount"] == Decimal("0.00100000")))
+        sequence=BIP125_SEQUENCE_NUMBER, **next(u for u in node.listunspent() if u["amount"] == Decimal("0.00100000")))
     destinations = {dest_address: Decimal("0.00050000")}
     if change_size > 0:
         destinations[node.getrawchangeaddress()] = change_size

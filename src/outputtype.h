@@ -1,11 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_OUTPUTTYPE_H
 #define QOGECOIN_OUTPUTTYPE_H
 
+#include <attributes.h>
 #include <script/signingprovider.h>
 #include <script/standard.h>
 
@@ -19,7 +20,6 @@ enum class OutputType {
     P2SH_SEGWIT,
     BECH32,
     BECH32M,
-    UNKNOWN,
 };
 
 static constexpr auto OUTPUT_TYPES = std::array{

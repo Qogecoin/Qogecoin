@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -141,30 +141,23 @@ BOOST_AUTO_TEST_CASE(multisig_IsStandard)
     for (int i = 0; i < 4; i++)
         key[i].MakeNewKey(true);
 
-    const auto is_standard{[](const CScript& spk) {
-        TxoutType type;
-        bool res{::IsStandard(spk, std::nullopt, type)};
-        if (res) {
-            BOOST_CHECK_EQUAL(type, TxoutType::MULTISIG);
-        }
-        return res;
-    }};
+    TxoutType whichType;
 
     CScript a_and_b;
     a_and_b << OP_2 << ToByteVector(key[0].GetPubKey()) << ToByteVector(key[1].GetPubKey()) << OP_2 << OP_CHECKMULTISIG;
-    BOOST_CHECK(is_standard(a_and_b));
+    BOOST_CHECK(::IsStandard(a_and_b, whichType));
 
     CScript a_or_b;
     a_or_b  << OP_1 << ToByteVector(key[0].GetPubKey()) << ToByteVector(key[1].GetPubKey()) << OP_2 << OP_CHECKMULTISIG;
-    BOOST_CHECK(is_standard(a_or_b));
+    BOOST_CHECK(::IsStandard(a_or_b, whichType));
 
     CScript escrow;
     escrow << OP_2 << ToByteVector(key[0].GetPubKey()) << ToByteVector(key[1].GetPubKey()) << ToByteVector(key[2].GetPubKey()) << OP_3 << OP_CHECKMULTISIG;
-    BOOST_CHECK(is_standard(escrow));
+    BOOST_CHECK(::IsStandard(escrow, whichType));
 
     CScript one_of_four;
     one_of_four << OP_1 << ToByteVector(key[0].GetPubKey()) << ToByteVector(key[1].GetPubKey()) << ToByteVector(key[2].GetPubKey()) << ToByteVector(key[3].GetPubKey()) << OP_4 << OP_CHECKMULTISIG;
-    BOOST_CHECK(!is_standard(one_of_four));
+    BOOST_CHECK(!::IsStandard(one_of_four, whichType));
 
     CScript malformed[6];
     malformed[0] << OP_3 << ToByteVector(key[0].GetPubKey()) << ToByteVector(key[1].GetPubKey()) << OP_2 << OP_CHECKMULTISIG;
@@ -174,9 +167,8 @@ BOOST_AUTO_TEST_CASE(multisig_IsStandard)
     malformed[4] << OP_1 << ToByteVector(key[0].GetPubKey()) << ToByteVector(key[1].GetPubKey()) << OP_CHECKMULTISIG;
     malformed[5] << OP_1 << ToByteVector(key[0].GetPubKey()) << ToByteVector(key[1].GetPubKey());
 
-    for (int i = 0; i < 6; i++) {
-        BOOST_CHECK(!is_standard(malformed[i]));
-    }
+    for (int i = 0; i < 6; i++)
+        BOOST_CHECK(!::IsStandard(malformed[i], whichType));
 }
 
 BOOST_AUTO_TEST_CASE(multisig_Sign)

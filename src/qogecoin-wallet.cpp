@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2016-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 #include <chainparams.h>
 #include <chainparamsbase.h>
 #include <clientversion.h>
-#include <compat/compat.h>
 #include <interfaces/init.h>
 #include <key.h>
 #include <logging.h>
@@ -89,7 +88,7 @@ static bool WalletAppInit(ArgsManager& args, int argc, char* argv[])
     return true;
 }
 
-MAIN_FUNCTION
+int main(int argc, char* argv[])
 {
     ArgsManager& args = gArgs;
 #ifdef WIN32

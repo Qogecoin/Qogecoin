@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -169,11 +169,12 @@ class UTXOCacheTracepointTest(QogecoinTestFramework):
 
         # Create a transaction and invalidate it by changing the txid of the previous
         # output to the coinbase txid of the block at height 1.
-        invalid_tx = self.wallet.create_self_transfer()["tx"]
+        invalid_tx = self.wallet.create_self_transfer(
+            from_node=self.nodes[0])["tx"]
         invalid_tx.vin[0].prevout.hash = int(block_1_coinbase_txid, 16)
 
         self.log.info("hooking into the utxocache:uncache tracepoint")
-        ctx = USDT(pid=self.nodes[0].process.pid)
+        ctx = USDT(path=str(self.options.qogecoind))
         ctx.enable_probe(probe="utxocache:uncache",
                          fn_name="trace_utxocache_uncache")
         bpf = BPF(text=utxocache_changes_program, usdt_contexts=[ctx], debug=0)
@@ -238,11 +239,7 @@ class UTXOCacheTracepointTest(QogecoinTestFramework):
 
         self.log.info(
             "hook into the utxocache:add and utxocache:spent tracepoints")
-<<<<<<< HEAD
-        ctx = USDT(pid=self.nodes[0].process.pid)
-=======
         ctx = USDT(path=str(self.options.qogecoind))
->>>>>>> 1a6cb3a78 (A Minor Change)
         ctx.enable_probe(probe="utxocache:add", fn_name="trace_utxocache_add")
         ctx.enable_probe(probe="utxocache:spent",
                          fn_name="trace_utxocache_spent")
@@ -338,11 +335,7 @@ class UTXOCacheTracepointTest(QogecoinTestFramework):
 
         self.log.info("test the utxocache:flush tracepoint API")
         self.log.info("hook into the utxocache:flush tracepoint")
-<<<<<<< HEAD
-        ctx = USDT(pid=self.nodes[0].process.pid)
-=======
         ctx = USDT(path=str(self.options.qogecoind))
->>>>>>> 1a6cb3a78 (A Minor Change)
         ctx.enable_probe(probe="utxocache:flush",
                          fn_name="trace_utxocache_flush")
         bpf = BPF(text=utxocache_flushes_program, usdt_contexts=[ctx], debug=0)
@@ -353,17 +346,16 @@ class UTXOCacheTracepointTest(QogecoinTestFramework):
         # that the handle_* functions succeeded.
         EXPECTED_HANDLE_FLUSH_SUCCESS = 3
         handle_flush_succeeds = 0
-        expected_flushes = list()
+        possible_cache_sizes = set()
+        expected_flushes = []
 
         def handle_utxocache_flush(_, data, __):
             nonlocal handle_flush_succeeds
             event = ctypes.cast(data, ctypes.POINTER(UTXOCacheFlush)).contents
             self.log.info(f"handle_utxocache_flush(): {event}")
-            expected_flushes.remove({
-                "mode": FLUSHMODE_NAME[event.mode],
-                "for_prune": event.for_prune,
-                "size": event.size
-            })
+            expected = expected_flushes.pop(0)
+            assert_equal(expected["mode"], FLUSHMODE_NAME[event.mode])
+            possible_cache_sizes.remove(event.size)  # fails if size not in set
             # sanity checks only
             assert(event.memory > 0)
             assert(event.duration > 0)
@@ -372,19 +364,20 @@ class UTXOCacheTracepointTest(QogecoinTestFramework):
         bpf["utxocache_flush"].open_perf_buffer(handle_utxocache_flush)
 
         self.log.info("stop the node to flush the UTXO cache")
-        UTXOS_IN_CACHE = 2 # might need to be changed if the eariler tests are modified
+        UTXOS_IN_CACHE = 104  # might need to be changed if the eariler tests are modified
         # A node shutdown causes two flushes. One that flushes UTXOS_IN_CACHE
         # UTXOs and one that flushes 0 UTXOs. Normally the 0-UTXO-flush is the
         # second flush, however it can happen that the order changes.
-        expected_flushes.append({"mode": "ALWAYS", "for_prune": False, "size": UTXOS_IN_CACHE})
-        expected_flushes.append({"mode": "ALWAYS", "for_prune": False, "size": 0})
+        possible_cache_sizes = {UTXOS_IN_CACHE, 0}
+        flush_for_shutdown = {"mode": "ALWAYS", "for_prune": False}
+        expected_flushes.extend([flush_for_shutdown, flush_for_shutdown])
         self.stop_node(0)
 
         bpf.perf_buffer_poll(timeout=200)
-        bpf.cleanup()
 
         self.log.info("check that we don't expect additional flushes")
         assert_equal(0, len(expected_flushes))
+        assert_equal(0, len(possible_cache_sizes))
 
         self.log.info("restart the node with -prune")
         self.start_node(0, ["-fastprune=1", "-prune=1"])
@@ -392,17 +385,12 @@ class UTXOCacheTracepointTest(QogecoinTestFramework):
         BLOCKS_TO_MINE = 350
         self.log.info(f"mine {BLOCKS_TO_MINE} blocks to be able to prune")
         self.generate(self.wallet, BLOCKS_TO_MINE)
-
-        self.log.info("test the utxocache:flush tracepoint API with pruning")
-        self.log.info("hook into the utxocache:flush tracepoint")
-        ctx = USDT(pid=self.nodes[0].process.pid)
-        ctx.enable_probe(probe="utxocache:flush",
-                         fn_name="trace_utxocache_flush")
-        bpf = BPF(text=utxocache_flushes_program, usdt_contexts=[ctx], debug=0)
-        bpf["utxocache_flush"].open_perf_buffer(handle_utxocache_flush)
+        # we added BLOCKS_TO_MINE coinbase UTXOs to the cache
+        possible_cache_sizes = {BLOCKS_TO_MINE}
+        expected_flushes.append(
+            {"mode": "NONE", "for_prune": True, "size_fn": lambda x: x == BLOCKS_TO_MINE})
 
         self.log.info(f"prune blockchain to trigger a flush for pruning")
-        expected_flushes.append({"mode": "NONE", "for_prune": True, "size": 0})
         self.nodes[0].pruneblockchain(315)
 
         bpf.perf_buffer_poll(timeout=500)
@@ -411,6 +399,7 @@ class UTXOCacheTracepointTest(QogecoinTestFramework):
         self.log.info(
             f"check that we don't expect additional flushes and that the handle_* function succeeded")
         assert_equal(0, len(expected_flushes))
+        assert_equal(0, len(possible_cache_sizes))
         assert_equal(EXPECTED_HANDLE_FLUSH_SUCCESS, handle_flush_succeeds)
 
 

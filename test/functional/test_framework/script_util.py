@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2019-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Useful Script constants and utils."""
@@ -103,11 +103,6 @@ def script_to_p2sh_p2wsh_script(script):
     script = check_script(script)
     p2shscript = CScript([OP_0, sha256(script)])
     return script_to_p2sh_script(p2shscript)
-
-
-def output_key_to_p2tr_script(key):
-    assert len(key) == 32
-    return program_to_witness_script(1, key)
 
 
 def check_key(key):

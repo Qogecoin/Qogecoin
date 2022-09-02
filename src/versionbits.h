@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2016-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -92,16 +92,16 @@ public:
     static uint32_t Mask(const Consensus::Params& params, Consensus::DeploymentPos pos);
 
     /** Get the BIP9 state for a given deployment for the block after pindexPrev. */
-    ThresholdState State(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    ThresholdState State(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos);
 
     /** Get the block height at which the BIP9 deployment switched into the state for the block after pindexPrev. */
-    int StateSinceHeight(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    int StateSinceHeight(const CBlockIndex* pindexPrev, const Consensus::Params& params, Consensus::DeploymentPos pos);
 
     /** Determine what nVersion a new block should use
      */
-    int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params);
 
-    void Clear() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    void Clear();
 };
 
 #endif // QOGECOIN_VERSIONBITS_H

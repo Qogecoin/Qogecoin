@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Base class for RPC testing."""
@@ -223,10 +223,10 @@ class QogecoinTestFramework(metaclass=QogecoinTestMetaClass):
                 # It still needs to exist and be None in order for tests to work however.
                 self.options.descriptors = None
 
-        PortSeed.n = self.options.port_seed
-
     def setup(self):
         """Call this method to start up the test framework object with options set."""
+
+        PortSeed.n = self.options.port_seed
 
         check_json_precision()
 
@@ -581,8 +581,6 @@ class QogecoinTestFramework(metaclass=QogecoinTestMetaClass):
     def connect_nodes(self, a, b):
         from_connection = self.nodes[a]
         to_connection = self.nodes[b]
-        from_num_peers = 1 + len(from_connection.getpeerinfo())
-        to_num_peers = 1 + len(to_connection.getpeerinfo())
         ip_port = "127.0.0.1:" + str(p2p_port(b))
         from_connection.addnode(ip_port, "onetry")
         # poll until version handshake complete to avoid race conditions
@@ -590,10 +588,10 @@ class QogecoinTestFramework(metaclass=QogecoinTestMetaClass):
         # See comments in net_processing:
         # * Must have a version message before anything else
         # * Must have a verack message before anything else
-        self.wait_until(lambda: sum(peer['version'] != 0 for peer in from_connection.getpeerinfo()) == from_num_peers)
-        self.wait_until(lambda: sum(peer['version'] != 0 for peer in to_connection.getpeerinfo()) == to_num_peers)
-        self.wait_until(lambda: sum(peer['bytesrecv_per_msg'].pop('verack', 0) == 24 for peer in from_connection.getpeerinfo()) == from_num_peers)
-        self.wait_until(lambda: sum(peer['bytesrecv_per_msg'].pop('verack', 0) == 24 for peer in to_connection.getpeerinfo()) == to_num_peers)
+        wait_until_helper(lambda: all(peer['version'] != 0 for peer in from_connection.getpeerinfo()))
+        wait_until_helper(lambda: all(peer['version'] != 0 for peer in to_connection.getpeerinfo()))
+        wait_until_helper(lambda: all(peer['bytesrecv_per_msg'].pop('verack', 0) == 24 for peer in from_connection.getpeerinfo()))
+        wait_until_helper(lambda: all(peer['bytesrecv_per_msg'].pop('verack', 0) == 24 for peer in to_connection.getpeerinfo()))
 
     def disconnect_nodes(self, a, b):
         def disconnect_nodes_helper(from_connection, node_num):
@@ -622,7 +620,7 @@ class QogecoinTestFramework(metaclass=QogecoinTestMetaClass):
                         raise
 
             # wait to disconnect
-            self.wait_until(lambda: not get_peer_ids(), timeout=5)
+            wait_until_helper(lambda: not get_peer_ids(), timeout=5)
 
         disconnect_nodes_helper(self.nodes[a], b)
 

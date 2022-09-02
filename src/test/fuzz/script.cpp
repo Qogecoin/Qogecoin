@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -55,7 +55,7 @@ FUZZ_TARGET_INIT(script, initialize_script)
     }
 
     TxoutType which_type;
-    bool is_standard_ret = IsStandard(script, std::nullopt, which_type);
+    bool is_standard_ret = IsStandard(script, which_type);
     if (!is_standard_ret) {
         assert(which_type == TxoutType::NONSTANDARD ||
                which_type == TxoutType::NULL_DATA ||
@@ -89,6 +89,7 @@ FUZZ_TARGET_INIT(script, initialize_script)
     const FlatSigningProvider signing_provider;
     (void)InferDescriptor(script, signing_provider);
     (void)IsSegWitOutput(signing_provider, script);
+    (void)IsSolvable(signing_provider, script);
 
     (void)RecursiveDynamicUsage(script);
 

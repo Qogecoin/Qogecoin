@@ -1,4 +1,4 @@
-// Copyright (c) 2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 #include <util/threadnames.h>
 
 #include <exception>
-#include <functional>
 
 void util::TraceThread(const char* thread_name, std::function<void()> thread_func)
 {

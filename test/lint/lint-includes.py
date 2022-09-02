@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2018-2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -19,9 +19,13 @@ EXCLUDED_DIRS = ["src/leveldb/",
                  "src/crc32c/",
                  "src/secp256k1/",
                  "src/minisketch/",
-                ]
+                 "src/univalue/"]
 
-EXPECTED_BOOST_INCLUDES = ["boost/date_time/posix_time/posix_time.hpp",
+EXPECTED_BOOST_INCLUDES = ["boost/algorithm/string.hpp",
+                           "boost/algorithm/string/classification.hpp",
+                           "boost/algorithm/string/replace.hpp",
+                           "boost/algorithm/string/split.hpp",
+                           "boost/date_time/posix_time/posix_time.hpp",
                            "boost/multi_index/hashed_index.hpp",
                            "boost/multi_index/ordered_index.hpp",
                            "boost/multi_index/sequenced_index.hpp",

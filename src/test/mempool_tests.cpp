@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,12 +15,6 @@
 BOOST_FIXTURE_TEST_SUITE(mempool_tests, TestingSetup)
 
 static constexpr auto REMOVAL_REASON_DUMMY = MemPoolRemovalReason::REPLACED;
-
-class MemPoolTest final : public CTxMemPool
-{
-public:
-    using CTxMemPool::GetMinFee;
-};
 
 BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
 {
@@ -62,7 +56,7 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
     }
 
 
-    CTxMemPool& testPool = *Assert(m_node.mempool);
+    CTxMemPool testPool;
     LOCK2(cs_main, testPool.cs);
 
     // Nothing in pool, remove should do nothing:
@@ -114,12 +108,12 @@ BOOST_AUTO_TEST_CASE(MempoolRemoveTest)
     BOOST_CHECK_EQUAL(testPool.size(), 0U);
 }
 
-template <typename name>
-static void CheckSort(CTxMemPool& pool, std::vector<std::string>& sortedOrder) EXCLUSIVE_LOCKS_REQUIRED(pool.cs)
+template<typename name>
+static void CheckSort(CTxMemPool &pool, std::vector<std::string> &sortedOrder) EXCLUSIVE_LOCKS_REQUIRED(pool.cs)
 {
     BOOST_CHECK_EQUAL(pool.size(), sortedOrder.size());
     typename CTxMemPool::indexed_transaction_set::index<name>::type::iterator it = pool.mapTx.get<name>().begin();
-    int count = 0;
+    int count=0;
     for (; it != pool.mapTx.get<name>().end(); ++it, ++count) {
         BOOST_CHECK_EQUAL(it->GetTx().GetHash().ToString(), sortedOrder[count]);
     }
@@ -127,7 +121,7 @@ static void CheckSort(CTxMemPool& pool, std::vector<std::string>& sortedOrder) E
 
 BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
 {
-    CTxMemPool& pool = *Assert(m_node.mempool);
+    CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
     TestMemPoolEntryHelper entry;
 
@@ -300,7 +294,7 @@ BOOST_AUTO_TEST_CASE(MempoolIndexingTest)
 
 BOOST_AUTO_TEST_CASE(MempoolAncestorIndexingTest)
 {
-    CTxMemPool& pool = *Assert(m_node.mempool);
+    CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
     TestMemPoolEntryHelper entry;
 
@@ -429,7 +423,7 @@ BOOST_AUTO_TEST_CASE(MempoolAncestorIndexingTest)
 
 BOOST_AUTO_TEST_CASE(MempoolSizeLimitTest)
 {
-    auto& pool = static_cast<MemPoolTest&>(*Assert(m_node.mempool));
+    CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
     TestMemPoolEntryHelper entry;
 
@@ -600,7 +594,7 @@ BOOST_AUTO_TEST_CASE(MempoolAncestryTests)
 {
     size_t ancestors, descendants;
 
-    CTxMemPool& pool = *Assert(m_node.mempool);
+    CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
     TestMemPoolEntryHelper entry;
 
@@ -753,15 +747,6 @@ BOOST_AUTO_TEST_CASE(MempoolAncestryTests)
     pool.GetTransactionAncestry(ty6->GetHash(), ancestors, descendants);
     BOOST_CHECK_EQUAL(ancestors, 9ULL);
     BOOST_CHECK_EQUAL(descendants, 6ULL);
-}
-
-BOOST_AUTO_TEST_CASE(MempoolAncestryTestsDiamond)
-{
-    size_t ancestors, descendants;
-
-    CTxMemPool& pool = *Assert(m_node.mempool);
-    LOCK2(::cs_main, pool.cs);
-    TestMemPoolEntryHelper entry;
 
     /* Ancestors represented more than once ("diamond") */
     //

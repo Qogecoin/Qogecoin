@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2015-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -57,10 +57,6 @@ void benchmark::BenchRunner::RunAll(const Args& args)
     std::regex reFilter(args.regex_filter);
     std::smatch baseMatch;
 
-    if (args.sanity_check) {
-        std::cout << "Running with --sanity-check option, benchmark results will be useless." << std::endl;
-    }
-
     std::vector<ankerl::nanobench::Result> benchmarkResults;
     for (const auto& p : benchmarks()) {
         if (!std::regex_match(p.first, baseMatch, reFilter)) {
@@ -73,9 +69,6 @@ void benchmark::BenchRunner::RunAll(const Args& args)
         }
 
         Bench bench;
-        if (args.sanity_check) {
-            bench.epochs(1).epochIterations(1);
-        }
         bench.name(p.first);
         if (args.min_time > 0ms) {
             // convert to nanos before dividing to reduce rounding errors

@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2010-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -32,7 +32,6 @@ enum class TransactionError {
     MAX_FEE_EXCEEDED,
     EXTERNAL_SIGNER_NOT_FOUND,
     EXTERNAL_SIGNER_FAILED,
-    INVALID_PACKAGE,
 };
 
 bilingual_str TransactionErrorString(const TransactionError error);

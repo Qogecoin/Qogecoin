@@ -1,11 +1,9 @@
-// Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_WALLET_RPC_UTIL_H
 #define QOGECOIN_WALLET_RPC_UTIL_H
-
-#include <script/script.h>
 
 #include <any>
 #include <memory>
@@ -41,8 +39,6 @@ const LegacyScriptPubKeyMan& EnsureConstLegacyScriptPubKeyMan(const CWallet& wal
 bool GetAvoidReuseFlag(const CWallet& wallet, const UniValue& param);
 bool ParseIncludeWatchonly(const UniValue& include_watchonly, const CWallet& wallet);
 std::string LabelFromValue(const UniValue& value);
-//! Fetch parent descriptors of this scriptPubKey.
-void PushParentDescriptors(const CWallet& wallet, const CScript& script_pubkey, UniValue& entry);
 
 void HandleWalletError(const std::shared_ptr<CWallet> wallet, DatabaseStatus& status, bilingual_str& error);
 } //  namespace wallet

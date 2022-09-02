@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -31,9 +31,9 @@ if [ -n "$ANDROID_HOME" ] && [ ! -d "$ANDROID_HOME" ]; then
   if [ ! -f "$ANDROID_TOOLS_PATH" ]; then
     CI_EXEC curl --location --fail "${ANDROID_TOOLS_URL}" -o "$ANDROID_TOOLS_PATH"
   fi
-  CI_EXEC mkdir -p "$ANDROID_HOME"
-  CI_EXEC unzip -o "$ANDROID_TOOLS_PATH" -d "$ANDROID_HOME"
-  CI_EXEC "yes | ${ANDROID_HOME}/cmdline-tools/bin/sdkmanager --sdk_root=\"${ANDROID_HOME}\" --install \"build-tools;${ANDROID_BUILD_TOOLS_VERSION}\" \"platform-tools\" \"platforms;android-${ANDROID_API_LEVEL}\" \"ndk;${ANDROID_NDK_VERSION}\""
+  CI_EXEC mkdir -p "${ANDROID_HOME}/cmdline-tools"
+  CI_EXEC unzip -o "$ANDROID_TOOLS_PATH" -d "${ANDROID_HOME}/cmdline-tools"
+  CI_EXEC "yes | ${ANDROID_HOME}/cmdline-tools/tools/bin/sdkmanager --install \"build-tools;${ANDROID_BUILD_TOOLS_VERSION}\" \"platform-tools\" \"platforms;android-${ANDROID_API_LEVEL}\" \"ndk;${ANDROID_NDK_VERSION}\""
 fi
 
 if [ -z "$NO_DEPENDS" ]; then
@@ -47,6 +47,6 @@ if [ -z "$NO_DEPENDS" ]; then
   fi
   CI_EXEC "$SHELL_OPTS" make "$MAKEJOBS" -C depends HOST="$HOST" "$DEP_OPTS" LOG=1
 fi
-if [ "$DOWNLOAD_PREVIOUS_RELEASES" = "true" ]; then
-  CI_EXEC test/get_previous_releases.py -b -t "$PREVIOUS_RELEASES_DIR"
+if [ -n "$PREVIOUS_RELEASES_TO_DOWNLOAD" ]; then
+  CI_EXEC test/get_previous_releases.py -b -t "$PREVIOUS_RELEASES_DIR" "${PREVIOUS_RELEASES_TO_DOWNLOAD}"
 fi

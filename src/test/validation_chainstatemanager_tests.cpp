@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
@@ -49,12 +49,12 @@ BOOST_AUTO_TEST_CASE(chainstatemanager)
     auto all = manager.GetAll();
     BOOST_CHECK_EQUAL_COLLECTIONS(all.begin(), all.end(), chainstates.begin(), chainstates.end());
 
-    auto& active_chain = WITH_LOCK(manager.GetMutex(), return manager.ActiveChain());
+    auto& active_chain = manager.ActiveChain();
     BOOST_CHECK_EQUAL(&active_chain, &c1.m_chain);
 
-    BOOST_CHECK_EQUAL(WITH_LOCK(manager.GetMutex(), return manager.ActiveHeight()), -1);
+    BOOST_CHECK_EQUAL(manager.ActiveHeight(), -1);
 
-    auto active_tip = WITH_LOCK(manager.GetMutex(), return manager.ActiveTip());
+    auto active_tip = manager.ActiveTip();
     auto exp_tip = c1.m_chain.Tip();
     BOOST_CHECK_EQUAL(active_tip, exp_tip);
 
@@ -84,12 +84,12 @@ BOOST_AUTO_TEST_CASE(chainstatemanager)
     auto all2 = manager.GetAll();
     BOOST_CHECK_EQUAL_COLLECTIONS(all2.begin(), all2.end(), chainstates.begin(), chainstates.end());
 
-    auto& active_chain2 = WITH_LOCK(manager.GetMutex(), return manager.ActiveChain());
+    auto& active_chain2 = manager.ActiveChain();
     BOOST_CHECK_EQUAL(&active_chain2, &c2.m_chain);
 
-    BOOST_CHECK_EQUAL(WITH_LOCK(manager.GetMutex(), return manager.ActiveHeight()), 0);
+    BOOST_CHECK_EQUAL(manager.ActiveHeight(), 0);
 
-    auto active_tip2 = WITH_LOCK(manager.GetMutex(), return manager.ActiveTip());
+    auto active_tip2 = manager.ActiveTip();
     auto exp_tip2 = c2.m_chain.Tip();
     BOOST_CHECK_EQUAL(active_tip2, exp_tip2);
 
@@ -193,7 +193,7 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_activate_snapshot, TestChain100Setup)
 
     // Should not load malleated snapshots
     BOOST_REQUIRE(!CreateAndActivateUTXOSnapshot(
-        m_node, m_path_root, [](AutoFile& auto_infile, SnapshotMetadata& metadata) {
+        m_node, m_path_root, [](CAutoFile& auto_infile, SnapshotMetadata& metadata) {
             // A UTXO is missing but count is correct
             metadata.m_coins_count -= 1;
 
@@ -204,22 +204,22 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_activate_snapshot, TestChain100Setup)
             auto_infile >> coin;
     }));
     BOOST_REQUIRE(!CreateAndActivateUTXOSnapshot(
-        m_node, m_path_root, [](AutoFile& auto_infile, SnapshotMetadata& metadata) {
+        m_node, m_path_root, [](CAutoFile& auto_infile, SnapshotMetadata& metadata) {
             // Coins count is larger than coins in file
             metadata.m_coins_count += 1;
     }));
     BOOST_REQUIRE(!CreateAndActivateUTXOSnapshot(
-        m_node, m_path_root, [](AutoFile& auto_infile, SnapshotMetadata& metadata) {
+        m_node, m_path_root, [](CAutoFile& auto_infile, SnapshotMetadata& metadata) {
             // Coins count is smaller than coins in file
             metadata.m_coins_count -= 1;
     }));
     BOOST_REQUIRE(!CreateAndActivateUTXOSnapshot(
-        m_node, m_path_root, [](AutoFile& auto_infile, SnapshotMetadata& metadata) {
+        m_node, m_path_root, [](CAutoFile& auto_infile, SnapshotMetadata& metadata) {
             // Wrong hash
             metadata.m_base_blockhash = uint256::ZERO;
     }));
     BOOST_REQUIRE(!CreateAndActivateUTXOSnapshot(
-        m_node, m_path_root, [](AutoFile& auto_infile, SnapshotMetadata& metadata) {
+        m_node, m_path_root, [](CAutoFile& auto_infile, SnapshotMetadata& metadata) {
             // Wrong hash
             metadata.m_base_blockhash = uint256::ONE;
     }));
@@ -236,7 +236,7 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_activate_snapshot, TestChain100Setup)
     BOOST_CHECK(WITH_LOCK(::cs_main, return !chainman.ActiveChain().Genesis()->IsAssumedValid()));
 
     const AssumeutxoData& au_data = *ExpectedAssumeutxo(snapshot_height, ::Params());
-    const CBlockIndex* tip = WITH_LOCK(chainman.GetMutex(), return chainman.ActiveTip());
+    const CBlockIndex* tip = chainman.ActiveTip();
 
     BOOST_CHECK_EQUAL(tip->nChainTx, au_data.nChainTx);
 
@@ -335,7 +335,7 @@ BOOST_FIXTURE_TEST_CASE(chainstatemanager_loadblockindex, TestChain100Setup)
     const int assumed_valid_start_idx = last_assumed_valid_idx - expected_assumed_valid;
 
     CBlockIndex* validated_tip{nullptr};
-    CBlockIndex* assumed_tip{WITH_LOCK(chainman.GetMutex(), return chainman.ActiveChain().Tip())};
+    CBlockIndex* assumed_tip{chainman.ActiveChain().Tip()};
 
     auto reload_all_block_indexes = [&]() {
         for (CChainState* cs : chainman.GetAll()) {

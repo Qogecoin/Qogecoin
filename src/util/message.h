@@ -1,16 +1,15 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_UTIL_MESSAGE_H
 #define QOGECOIN_UTIL_MESSAGE_H
 
+#include <key.h> // For CKey
 #include <uint256.h>
 
 #include <string>
-
-class CKey;
 
 extern const std::string MESSAGE_MAGIC;
 

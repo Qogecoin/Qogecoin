@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,7 +15,7 @@
 #include <support/cleanse.h>
 #include <util/time.h> // for GetTime()
 #ifdef WIN32
-#include <compat/compat.h>
+#include <compat.h> // for Windows API
 #endif
 
 #include <algorithm>

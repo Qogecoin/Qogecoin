@@ -1,7 +1,8 @@
-// Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <attributes.h>
 #include <clientversion.h>
 #include <coins.h>
 #include <script/standard.h>

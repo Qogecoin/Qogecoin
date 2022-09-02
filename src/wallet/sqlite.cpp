@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,7 +23,7 @@
 namespace wallet {
 static constexpr int32_t WALLET_SCHEMA_VERSION = 0;
 
-static GlobalMutex g_sqlite_mutex;
+static Mutex g_sqlite_mutex;
 static int g_sqlite_count GUARDED_BY(g_sqlite_mutex) = 0;
 
 static void ErrorLogCallback(void* arg, int code, const char* msg)

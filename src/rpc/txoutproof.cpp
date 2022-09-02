@@ -1,5 +1,5 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2022 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2022 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -87,7 +87,7 @@ static RPCHelpMan gettxoutproof()
             LOCK(cs_main);
 
             if (pblockindex == nullptr) {
-                const CTransactionRef tx = GetTransaction(/*block_index=*/nullptr, /*mempool=*/nullptr, *setTxids.begin(), chainman.GetConsensus(), hashBlock);
+                const CTransactionRef tx = GetTransaction(/*block_index=*/nullptr, /*mempool=*/nullptr, *setTxids.begin(), Params().GetConsensus(), hashBlock);
                 if (!tx || hashBlock.IsNull()) {
                     throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Transaction not yet in block");
                 }
@@ -98,7 +98,7 @@ static RPCHelpMan gettxoutproof()
             }
 
             CBlock block;
-            if (!ReadBlockFromDisk(block, pblockindex, chainman.GetConsensus())) {
+            if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus())) {
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Can't read block from disk");
             }
 

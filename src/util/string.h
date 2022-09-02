@@ -1,32 +1,24 @@
-// Copyright (c) 2019-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_UTIL_STRING_H
 #define QOGECOIN_UTIL_STRING_H
 
+#include <attributes.h>
 #include <util/spanparsing.h>
 
 #include <algorithm>
 #include <array>
-#include <cstdint>
 #include <cstring>
 #include <locale>
 #include <sstream>
 #include <string>
-#include <string_view>
 #include <vector>
-
-void ReplaceAll(std::string& in_out, const std::string& search, const std::string& substitute);
 
 [[nodiscard]] inline std::vector<std::string> SplitString(std::string_view str, char sep)
 {
     return spanparsing::Split<std::string>(str, sep);
-}
-
-[[nodiscard]] inline std::vector<std::string> SplitString(std::string_view str, std::string_view separators)
-{
-    return spanparsing::Split<std::string>(str, separators);
 }
 
 [[nodiscard]] inline std::string_view TrimStringView(std::string_view str, std::string_view pattern = " \f\n\r\t\v")

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test per-peer message capture capability.
@@ -43,8 +43,12 @@ def mini_parser(dat_file):
                 break
             tmp_header = BytesIO(tmp_header_raw)
             tmp_header.read(TIME_SIZE) # skip the timestamp field
-            msgtype = tmp_header.read(MSGTYPE_SIZE).rstrip(b'\x00')
+            raw_msgtype = tmp_header.read(MSGTYPE_SIZE)
+            msgtype: bytes = raw_msgtype.split(b'\x00', 1)[0]
+            remainder =  raw_msgtype.split(b'\x00', 1)[1]
+            assert(len(msgtype) > 0)
             assert(msgtype in MESSAGEMAP)
+            assert(len(remainder) == 0 or not remainder.decode().isprintable())
             length: int = int.from_bytes(tmp_header.read(LENGTH_SIZE), "little")
             data = f_in.read(length)
             assert_equal(len(data), length)

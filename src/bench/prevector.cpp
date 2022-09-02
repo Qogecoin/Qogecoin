@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2015-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,8 +10,8 @@
 #include <bench/bench.h>
 
 struct nontrivial_t {
-    int x{-1};
-    nontrivial_t() = default;
+    int x;
+    nontrivial_t() :x(-1) {}
     SERIALIZE_METHODS(nontrivial_t, obj) { READWRITE(obj.x); }
 };
 static_assert(!std::is_trivially_default_constructible<nontrivial_t>::value,

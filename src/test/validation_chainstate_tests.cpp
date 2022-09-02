@@ -1,29 +1,30 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 //
 #include <chainparams.h>
-#include <consensus/validation.h>
 #include <random.h>
-#include <rpc/blockchain.h>
+#include <uint256.h>
+#include <consensus/validation.h>
 #include <sync.h>
+#include <rpc/blockchain.h>
 #include <test/util/chainstate.h>
 #include <test/util/setup_common.h>
-#include <uint256.h>
 #include <validation.h>
 
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_FIXTURE_TEST_SUITE(validation_chainstate_tests, ChainTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(validation_chainstate_tests, TestingSetup)
 
 //! Test resizing coins-related CChainState caches during runtime.
 //!
 BOOST_AUTO_TEST_CASE(validation_chainstate_resize_caches)
 {
-    ChainstateManager& manager = *Assert(m_node.chainman);
-    CTxMemPool& mempool = *Assert(m_node.mempool);
+    ChainstateManager manager;
+    WITH_LOCK(::cs_main, manager.m_blockman.m_block_tree_db = std::make_unique<CBlockTreeDB>(1 << 20, true));
+    CTxMemPool mempool;
 
     //! Create and add a Coin with DynamicMemoryUsage of 80 bytes to the given view.
     auto add_coin = [](CCoinsViewCache& coins_view) -> COutPoint {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test that the mempool ensures transaction delivery by periodically sending
@@ -40,7 +40,7 @@ class MempoolUnbroadcastTest(QogecoinTestFramework):
             wallet_tx_hsh = node.sendtoaddress(addr, 0.0001)
 
         # generate a txn using sendrawtransaction
-        txFS = self.wallet.create_self_transfer()
+        txFS = self.wallet.create_self_transfer(from_node=node)
         rpc_tx_hsh = node.sendrawtransaction(txFS["hex"])
 
         # check transactions are in unbroadcast using rpc

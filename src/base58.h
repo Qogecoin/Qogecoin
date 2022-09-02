@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -14,6 +14,7 @@
 #ifndef QOGECOIN_BASE58_H
 #define QOGECOIN_BASE58_H
 
+#include <attributes.h>
 #include <span.h>
 
 #include <string>

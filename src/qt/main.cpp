@@ -1,10 +1,9 @@
-// Copyright (c) 2018-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2018-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <qt/qogecoin.h>
 
-#include <compat/compat.h>
 #include <util/translation.h>
 #include <util/url.h>
 
@@ -19,7 +18,4 @@ extern const std::function<std::string(const char*)> G_TRANSLATION_FUN = [](cons
 };
 UrlDecodeFn* const URL_DECODE = urlDecode;
 
-MAIN_FUNCTION
-{
-    return GuiMain(argc, argv);
-}
+int main(int argc, char* argv[]) { return GuiMain(argc, argv); }

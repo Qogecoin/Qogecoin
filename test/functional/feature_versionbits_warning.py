@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2016-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test version bits warning system.
@@ -58,8 +58,7 @@ class VersionBitsWarningTest(QogecoinTestFramework):
 
     def versionbits_in_alert_file(self):
         """Test that the versionbits warning has been written to the alert file."""
-        with open(self.alert_filename, 'r', encoding='utf8') as f:
-            alert_text = f.read()
+        alert_text = open(self.alert_filename, 'r', encoding='utf8').read()
         return VB_PATTERN.search(alert_text) is not None
 
     def run_test(self):

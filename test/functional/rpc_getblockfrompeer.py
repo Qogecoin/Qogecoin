@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the getblockfrompeer RPC."""
 
 from test_framework.authproxy import JSONRPCException
-from test_framework.messages import NODE_WITNESS
-from test_framework.p2p import (
-    P2P_SERVICES,
-    P2PInterface,
-)
 from test_framework.test_framework import QogecoinTestFramework
 from test_framework.util import (
     assert_equal,
@@ -54,24 +49,14 @@ class GetBlockFromPeerTest(QogecoinTestFramework):
         assert_equal(len(peers), 1)
         peer_0_peer_1_id = peers[0]["id"]
 
-        self.log.info("Arguments must be valid")
-        assert_raises_rpc_error(-8, "hash must be of length 64 (not 4, for '1234')", self.nodes[0].getblockfrompeer, "1234", peer_0_peer_1_id)
-        assert_raises_rpc_error(-3, "Expected type string, got number", self.nodes[0].getblockfrompeer, 1234, peer_0_peer_1_id)
-        assert_raises_rpc_error(-3, "Expected type number, got string", self.nodes[0].getblockfrompeer, short_tip, "0")
+        self.log.info("Arguments must be sensible")
+        assert_raises_rpc_error(-8, "hash must be of length 64 (not 4, for '1234')", self.nodes[0].getblockfrompeer, "1234", 0)
 
         self.log.info("We must already have the header")
         assert_raises_rpc_error(-1, "Block header missing", self.nodes[0].getblockfrompeer, "00" * 32, 0)
 
         self.log.info("Non-existent peer generates error")
-        for peer_id in [-1, peer_0_peer_1_id + 1]:
-            assert_raises_rpc_error(-1, "Peer does not exist", self.nodes[0].getblockfrompeer, short_tip, peer_id)
-
-        self.log.info("Fetching from pre-segwit peer generates error")
-        self.nodes[0].add_p2p_connection(P2PInterface(), services=P2P_SERVICES & ~NODE_WITNESS)
-        peers = self.nodes[0].getpeerinfo()
-        assert_equal(len(peers), 2)
-        presegwit_peer_id = peers[1]["id"]
-        assert_raises_rpc_error(-1, "Pre-SegWit peer", self.nodes[0].getblockfrompeer, short_tip, presegwit_peer_id)
+        assert_raises_rpc_error(-1, "Peer does not exist", self.nodes[0].getblockfrompeer, short_tip, peer_0_peer_1_id + 1)
 
         self.log.info("Successful fetch")
         result = self.nodes[0].getblockfrompeer(short_tip, peer_0_peer_1_id)
@@ -80,7 +65,6 @@ class GetBlockFromPeerTest(QogecoinTestFramework):
 
         self.log.info("Don't fetch blocks we already have")
         assert_raises_rpc_error(-1, "Block already downloaded", self.nodes[0].getblockfrompeer, short_tip, peer_0_peer_1_id)
-
 
 if __name__ == '__main__':
     GetBlockFromPeerTest().main()

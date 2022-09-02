@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,10 +18,11 @@ export COMMIT_RANGE
 test/lint/git-subtree-check.sh src/crypto/ctaes
 test/lint/git-subtree-check.sh src/secp256k1
 test/lint/git-subtree-check.sh src/minisketch
+test/lint/git-subtree-check.sh src/univalue
 test/lint/git-subtree-check.sh src/leveldb
 test/lint/git-subtree-check.sh src/crc32c
 test/lint/check-doc.py
-test/lint/all-lint.py
+test/lint/lint-all.py
 
 if [ "$CIRRUS_REPO_FULL_NAME" = "qogecoin/qogecoin" ] && [ "$CIRRUS_PR" = "" ] ; then
     # Sanity check only the last few commits to get notified of missing sigs,

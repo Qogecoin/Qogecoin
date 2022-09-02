@@ -1,16 +1,13 @@
-// Copyright (c) 2014-2018 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2014-2018 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_TIMEDATA_H
 #define QOGECOIN_TIMEDATA_H
 
-#include <util/time.h>
-
 #include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <cstdint>
+#include <assert.h>
+#include <stdint.h>
 #include <vector>
 
 static const int64_t DEFAULT_MAX_TIME_ADJUSTMENT = 70 * 60;
@@ -75,7 +72,7 @@ public:
 
 /** Functions to keep track of adjusted P2P time */
 int64_t GetTimeOffset();
-NodeClock::time_point GetAdjustedTime();
+int64_t GetAdjustedTime();
 void AddTimeData(const CNetAddr& ip, int64_t nTime);
 
 /**

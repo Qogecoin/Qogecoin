@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2010 ArtForz -- public domain half-a-node
 # Copyright (c) 2012 Jeff Garzik
-# Copyright (c) 2010-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2010-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test objects for interacting with a qogecoind node over the p2p protocol.
@@ -47,9 +47,6 @@ from test_framework.messages import (
     msg_getaddr,
     msg_getblocks,
     msg_getblocktxn,
-    msg_getcfcheckpt,
-    msg_getcfheaders,
-    msg_getcfilters,
     msg_getdata,
     msg_getheaders,
     msg_headers,
@@ -111,9 +108,6 @@ MESSAGEMAP = {
     b"getaddr": msg_getaddr,
     b"getblocks": msg_getblocks,
     b"getblocktxn": msg_getblocktxn,
-    b"getcfcheckpt": msg_getcfcheckpt,
-    b"getcfheaders": msg_getcfheaders,
-    b"getcfilters": msg_getcfilters,
     b"getdata": msg_getdata,
     b"getheaders": msg_getheaders,
     b"headers": msg_headers,

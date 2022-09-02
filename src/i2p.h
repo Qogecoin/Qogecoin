@@ -1,11 +1,11 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef QOGECOIN_I2P_H
 #define QOGECOIN_I2P_H
 
-#include <compat/compat.h>
+#include <compat.h>
 #include <fs.h>
 #include <netaddress.h>
 #include <sync.h>
@@ -84,7 +84,7 @@ public:
      * to the listening socket and address.
      * @return true on success
      */
-    bool Listen(Connection& conn) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    bool Listen(Connection& conn);
 
     /**
      * Wait for and accept a new incoming connection.
@@ -103,7 +103,7 @@ public:
      * it is set to `false`. Only set if `false` is returned.
      * @return true on success
      */
-    bool Connect(const CService& to, Connection& conn, bool& proxy_error) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    bool Connect(const CService& to, Connection& conn, bool& proxy_error);
 
 private:
     /**
@@ -172,7 +172,7 @@ private:
     /**
      * Check the control socket for errors and possibly disconnect.
      */
-    void CheckControlSock() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex);
+    void CheckControlSock();
 
     /**
      * Generate a new destination with the SAM proxy and set `m_private_key` to it.

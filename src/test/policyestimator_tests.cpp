@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -12,12 +12,12 @@
 
 #include <boost/test/unit_test.hpp>
 
-BOOST_FIXTURE_TEST_SUITE(policyestimator_tests, ChainTestingSetup)
+BOOST_FIXTURE_TEST_SUITE(policyestimator_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(BlockPolicyEstimates)
 {
-    CBlockPolicyEstimator& feeEst = *Assert(m_node.fee_estimator);
-    CTxMemPool& mpool = *Assert(m_node.mempool);
+    CBlockPolicyEstimator feeEst;
+    CTxMemPool mpool(&feeEst);
     LOCK2(cs_main, mpool.cs);
     TestMemPoolEntryHelper entry;
     CAmount basefee(2000);

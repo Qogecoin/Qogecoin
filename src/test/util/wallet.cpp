@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,7 +8,6 @@
 #include <outputtype.h>
 #include <script/standard.h>
 #ifdef ENABLE_WALLET
-#include <util/check.h>
 #include <util/translation.h>
 #include <wallet/wallet.h>
 #endif
@@ -21,7 +20,11 @@ const std::string ADDRESS_BCRT1_UNSPENDABLE = "bcrt1qqqqqqqqqqqqqqqqqqqqqqqqqqqq
 std::string getnewaddress(CWallet& w)
 {
     constexpr auto output_type = OutputType::BECH32;
-    return EncodeDestination(*Assert(w.GetNewDestination(output_type, "")));
+    CTxDestination dest;
+    bilingual_str error;
+    if (!w.GetNewDestination(output_type, "", dest, error)) assert(false);
+
+    return EncodeDestination(dest);
 }
 
 #endif // ENABLE_WALLET

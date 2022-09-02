@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -46,7 +46,8 @@ FUZZ_TARGET_INIT(process_messages, initialize_process_messages)
         peers.push_back(ConsumeNodeAsUniquePtr(fuzzed_data_provider, i).release());
         CNode& p2p_node = *peers.back();
 
-        FillNode(fuzzed_data_provider, connman, p2p_node);
+        g_setup->m_node.peerman->InitializeNode(&p2p_node);
+        FillNode(fuzzed_data_provider, connman, *g_setup->m_node.peerman, p2p_node);
 
         connman.AddTestNode(p2p_node);
     }

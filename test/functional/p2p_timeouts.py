@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2016-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2016-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test various net timeouts.
@@ -94,11 +94,6 @@ class TimeoutsTest(QogecoinTestFramework):
             no_version_node.wait_for_disconnect(timeout=1)
             no_send_node.wait_for_disconnect(timeout=1)
 
-        self.stop_nodes(0)
-        self.nodes[0].assert_start_raises_init_error(
-            expected_msg='Error: peertimeout must be a positive integer.',
-            extra_args=['-peertimeout=0'],
-        )
 
 if __name__ == '__main__':
     TimeoutsTest().main()

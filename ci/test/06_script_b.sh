@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -35,39 +35,10 @@ if [ "$RUN_FUNCTIONAL_TESTS" = "true" ]; then
 fi
 
 if [ "${RUN_TIDY}" = "true" ]; then
-  set -eo pipefail
   export P_CI_DIR="${BASE_BUILD_DIR}/qogecoin-$HOST/src/"
-  ( CI_EXEC run-clang-tidy -quiet "${MAKEJOBS}" ) | grep -C5 "error"
+  CI_EXEC run-clang-tidy "${MAKEJOBS}"
   export P_CI_DIR="${BASE_BUILD_DIR}/qogecoin-$HOST/"
-  CI_EXEC "python3 ${DIR_IWYU}/include-what-you-use/iwyu_tool.py"\
-          " src/compat"\
-          " src/dbwrapper.cpp"\
-          " src/init"\
-          " src/kernel"\
-          " src/node/chainstate.cpp"\
-          " src/node/mempool_args.cpp"\
-          " src/node/validation_cache_args.cpp"\
-          " src/policy/feerate.cpp"\
-          " src/policy/packages.cpp"\
-          " src/policy/settings.cpp"\
-          " src/primitives/transaction.cpp"\
-          " src/rpc/fees.cpp"\
-          " src/rpc/signmessage.cpp"\
-          " src/test/fuzz/txorphan.cpp"\
-          " src/threadinterrupt.cpp"\
-          " src/util/bip32.cpp"\
-          " src/util/bytevectorhash.cpp"\
-          " src/util/error.cpp"\
-          " src/util/getuniquepath.cpp"\
-          " src/util/hasher.cpp"\
-          " src/util/message.cpp"\
-          " src/util/moneystr.cpp"\
-          " src/util/serfloat.cpp"\
-          " src/util/spanparsing.cpp"\
-          " src/util/strencodings.cpp"\
-          " src/util/syserror.cpp"\
-          " src/util/url.cpp"\
-          " -p . ${MAKEJOBS} -- -Xiwyu --cxx17ns -Xiwyu --mapping_file=${BASE_BUILD_DIR}/qogecoin-$HOST/contrib/devtools/iwyu/qogecoin.core.imp"
+  CI_EXEC "python3 ${BASE_SCRATCH_DIR}/iwyu/include-what-you-use/iwyu_tool.py src/compat src/init -p . ${MAKEJOBS} -- -Xiwyu --cxx17ns -Xiwyu --mapping_file=${BASE_BUILD_DIR}/qogecoin-$HOST/contrib/devtools/iwyu/qogecoin.core.imp"
 fi
 
 if [ "$RUN_SECURITY_TESTS" = "true" ]; then

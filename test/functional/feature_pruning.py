@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the pruning code.
@@ -290,7 +290,7 @@ class PruneTest(QogecoinTestFramework):
 
         def prune(index):
             ret = node.pruneblockchain(height=height(index))
-            assert_equal(ret + 1, node.getblockchaininfo()['pruneheight'])
+            assert_equal(ret, node.getblockchaininfo()['pruneheight'])
 
         def has_block(index):
             return os.path.isfile(os.path.join(self.nodes[node_number].datadir, self.chain, "blocks", f"blk{index:05}.dat"))

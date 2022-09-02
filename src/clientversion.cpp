@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2012-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,7 +28,8 @@ const std::string CLIENT_NAME("Satoshi");
 //   - "// No build information available", if proper git information is not available
 #endif
 
-//! git will put "#define GIT_COMMIT_ID ..." on the next line inside archives. $Format:%n#define GIT_COMMIT_ID "%H"$
+//! git will put "#define GIT_COMMIT_ID ..." on the next line inside archives. 
+#define GIT_COMMIT_ID "c2b8cf298bcb274a46a7e2a5939be7b4a349af32"
 
 #ifdef BUILD_GIT_TAG
     #define BUILD_DESC BUILD_GIT_TAG
@@ -84,7 +85,7 @@ std::string CopyrightHolders(const std::string& strPrefix)
 
     // Make sure Qogecoin Core copyright is not removed by accident
     if (copyright_devs.find("Qogecoin Core") == std::string::npos) {
-        strCopyrightHolders += "\n" + strPrefix + "The Qogecoin and Qogecoin Core Authors";
+        strCopyrightHolders += "\n" + strPrefix + "The Bitcoin and Qogecoin Core Authors";
     }
     return strCopyrightHolders;
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2019-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2019-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 # Test Taproot softfork (BIPs 340-342)
@@ -90,13 +90,8 @@ from test_framework.script_util import (
     script_to_p2sh_script,
     script_to_p2wsh_script,
 )
-<<<<<<< HEAD
 from test_framework.test_framework import QogecoinTestFramework
-from test_framework.util import (
-    assert_raises_rpc_error,
-    assert_equal,
-    random_bytes,
-)
+from test_framework.util import assert_raises_rpc_error, assert_equal
 from test_framework.key import generate_privkey, compute_xonly_pubkey, sign_schnorr, tweak_add_privkey, ECKey
 from test_framework.address import (
     hash160,
@@ -570,6 +565,10 @@ def random_checksig_style(pubkey):
     else:
         ret = CScript([pubkey, opcode])
     return bytes(ret)
+
+def random_bytes(n):
+    """Return a random bytes object of length n."""
+    return bytes(random.getrandbits(8) for i in range(n))
 
 def bitflipper(expr):
     """Return a callable that evaluates expr and returns it with a random bitflip."""
@@ -1131,12 +1130,6 @@ def spenders_taproot_active():
         ]
         tap = taproot_construct(pubs[0], scripts)
         add_spender(spenders, "alwaysvalid/notsuccessx", tap=tap, leaf="op_success", inputs=[], standard=False, failure={"leaf": "normal"}) # err_msg differs based on opcode
-
-    # == Test case for https://github.com/qogecoin/qogecoin/issues/24765 ==
-
-    zero_fn = lambda h: bytes([0 for _ in range(32)])
-    tap = taproot_construct(pubs[0], [("leaf", CScript([pubs[1], OP_CHECKSIG, pubs[1], OP_CHECKSIGADD, OP_2, OP_EQUAL])), zero_fn])
-    add_spender(spenders, "case24765", tap=tap, leaf="leaf", inputs=[getter("sign"), getter("sign")], key=secs[1], no_fail=True)
 
     # == Legacy tests ==
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -21,9 +21,9 @@ QogecoinUnits::QogecoinUnits(QObject *parent):
 QList<QogecoinUnit> QogecoinUnits::availableUnits()
 {
     QList<QogecoinUnit> unitlist;
-    unitlist.append(Unit::QOGE);
-    unitlist.append(Unit::mQOGE);
-    unitlist.append(Unit::uQOGE);
+    unitlist.append(Unit::Qoge);
+    unitlist.append(Unit::mQoge);
+    unitlist.append(Unit::uQoge);
     unitlist.append(Unit::SAT);
     return unitlist;
 }
@@ -31,9 +31,9 @@ QList<QogecoinUnit> QogecoinUnits::availableUnits()
 QString QogecoinUnits::longName(Unit unit)
 {
     switch (unit) {
-    case Unit::QOGE: return QString("Qoge");
-    case Unit::mQOGE: return QString("mQoge");
-    case Unit::uQOGE: return QString::fromUtf8("µQoge (bits)");
+    case Unit::Qoge: return QString("Qoge");
+    case Unit::mQoge: return QString("mQoge");
+    case Unit::uQoge: return QString::fromUtf8("µQoge (bits)");
     case Unit::SAT: return QString("Satoshi (sat)");
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -42,9 +42,9 @@ QString QogecoinUnits::longName(Unit unit)
 QString QogecoinUnits::shortName(Unit unit)
 {
     switch (unit) {
-    case Unit::QOGE: return longName(unit);
-    case Unit::mQOGE: return longName(unit);
-    case Unit::uQOGE: return QString("bits");
+    case Unit::Qoge: return longName(unit);
+    case Unit::mQoge: return longName(unit);
+    case Unit::uQoge: return QString("bits");
     case Unit::SAT: return QString("sat");
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -53,9 +53,9 @@ QString QogecoinUnits::shortName(Unit unit)
 QString QogecoinUnits::description(Unit unit)
 {
     switch (unit) {
-    case Unit::QOGE: return QString("Qogecoins");
-    case Unit::mQOGE: return QString("Milli-Qogecoins (1 / 1" THIN_SP_UTF8 "000)");
-    case Unit::uQOGE: return QString("Micro-Qogecoins (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+    case Unit::Qoge: return QString("Qogecoins");
+    case Unit::mQoge: return QString("Milli-Qogecoins (1 / 1" THIN_SP_UTF8 "000)");
+    case Unit::uQoge: return QString("Micro-Qogecoins (bits) (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     case Unit::SAT: return QString("Satoshi (sat) (1 / 100" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -64,9 +64,9 @@ QString QogecoinUnits::description(Unit unit)
 qint64 QogecoinUnits::factor(Unit unit)
 {
     switch (unit) {
-    case Unit::QOGE: return 100'000'000;
-    case Unit::mQOGE: return 100'000;
-    case Unit::uQOGE: return 100;
+    case Unit::Qoge: return 100'000'000;
+    case Unit::mQoge: return 100'000;
+    case Unit::uQoge: return 100;
     case Unit::SAT: return 1;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -75,9 +75,9 @@ qint64 QogecoinUnits::factor(Unit unit)
 int QogecoinUnits::decimals(Unit unit)
 {
     switch (unit) {
-    case Unit::QOGE: return 8;
-    case Unit::mQOGE: return 5;
-    case Unit::uQOGE: return 2;
+    case Unit::Qoge: return 8;
+    case Unit::mQoge: return 5;
+    case Unit::uQoge: return 2;
     case Unit::SAT: return 0;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -232,9 +232,9 @@ namespace {
 qint8 ToQint8(QogecoinUnit unit)
 {
     switch (unit) {
-    case QogecoinUnit::QOGE: return 0;
-    case QogecoinUnit::mQOGE: return 1;
-    case QogecoinUnit::uQOGE: return 2;
+    case QogecoinUnit::Qoge: return 0;
+    case QogecoinUnit::mQoge: return 1;
+    case QogecoinUnit::uQoge: return 2;
     case QogecoinUnit::SAT: return 3;
     } // no default case, so the compiler can warn about missing cases
     assert(false);
@@ -243,9 +243,9 @@ qint8 ToQint8(QogecoinUnit unit)
 QogecoinUnit FromQint8(qint8 num)
 {
     switch (num) {
-    case 0: return QogecoinUnit::QOGE;
-    case 1: return QogecoinUnit::mQOGE;
-    case 2: return QogecoinUnit::uQOGE;
+    case 0: return QogecoinUnit::Qoge;
+    case 1: return QogecoinUnit::mQoge;
+    case 2: return QogecoinUnit::uQoge;
     case 3: return QogecoinUnit::SAT;
     }
     assert(false);

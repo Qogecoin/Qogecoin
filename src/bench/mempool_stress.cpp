@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -88,7 +88,7 @@ static void ComplexMemPool(benchmark::Bench& bench)
     }
     std::vector<CTransactionRef> ordered_coins = CreateOrderedCoins(det_rand, childTxs, /*min_ancestors=*/1);
     const auto testing_setup = MakeNoLogFileContext<const TestingSetup>(CBaseChainParams::MAIN);
-    CTxMemPool& pool = *testing_setup.get()->m_node.mempool;
+    CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
     bench.run([&]() NO_THREAD_SAFETY_ANALYSIS {
         for (auto& tx : ordered_coins) {
@@ -102,15 +102,16 @@ static void ComplexMemPool(benchmark::Bench& bench)
 static void MempoolCheck(benchmark::Bench& bench)
 {
     FastRandomContext det_rand{true};
-    auto testing_setup = MakeNoLogFileContext<TestChain100Setup>(CBaseChainParams::REGTEST, {"-checkmempool=1"});
-    CTxMemPool& pool = *testing_setup.get()->m_node.mempool;
+    const int childTxs = bench.complexityN() > 1 ? static_cast<int>(bench.complexityN()) : 2000;
+    const std::vector<CTransactionRef> ordered_coins = CreateOrderedCoins(det_rand, childTxs, /*min_ancestors=*/5);
+    const auto testing_setup = MakeNoLogFileContext<const TestingSetup>(CBaseChainParams::MAIN, {"-checkmempool=1"});
+    CTxMemPool pool;
     LOCK2(cs_main, pool.cs);
-    testing_setup->PopulateMempool(det_rand, 400, true);
     const CCoinsViewCache& coins_tip = testing_setup.get()->m_node.chainman->ActiveChainstate().CoinsTip();
+    for (auto& tx : ordered_coins) AddTx(tx, pool);
 
     bench.run([&]() NO_THREAD_SAFETY_ANALYSIS {
-        // Bump up the spendheight so we don't hit premature coinbase spend errors.
-        pool.check(coins_tip, /*spendheight=*/300);
+        pool.check(coins_tip, /*spendheight=*/2);
     });
 }
 

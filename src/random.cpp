@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,7 +10,7 @@
 #include <crypto/sha512.h>
 #include <support/cleanse.h>
 #ifdef WIN32
-#include <compat/compat.h>
+#include <compat.h> // for Windows API
 #include <wincrypt.h>
 #endif
 #include <logging.h>
@@ -97,7 +97,7 @@ static void ReportHardwareRand()
     // This must be done in a separate function, as InitHardwareRand() may be indirectly called
     // from global constructors, before logging is initialized.
     if (g_rdseed_supported) {
-        LogPrintf("Using RdSeed as an additional entropy source\n");
+        LogPrintf("Using RdSeed as additional entropy source\n");
     }
     if (g_rdrand_supported) {
         LogPrintf("Using RdRand as an additional entropy source\n");
@@ -370,9 +370,11 @@ public:
         InitHardwareRand();
     }
 
-    ~RNGState() = default;
+    ~RNGState()
+    {
+    }
 
-    void AddEvent(uint32_t event_info) noexcept EXCLUSIVE_LOCKS_REQUIRED(!m_events_mutex)
+    void AddEvent(uint32_t event_info) noexcept
     {
         LOCK(m_events_mutex);
 
@@ -386,7 +388,7 @@ public:
     /**
      * Feed (the hash of) all events added through AddEvent() to hasher.
      */
-    void SeedEvents(CSHA512& hasher) noexcept EXCLUSIVE_LOCKS_REQUIRED(!m_events_mutex)
+    void SeedEvents(CSHA512& hasher) noexcept
     {
         // We use only SHA256 for the events hashing to get the ASM speedups we have for SHA256,
         // since we want it to be fast as network peers may be able to trigger it repeatedly.
@@ -405,7 +407,7 @@ public:
      *
      * If this function has never been called with strong_seed = true, false is returned.
      */
-    bool MixExtract(unsigned char* out, size_t num, CSHA512&& hasher, bool strong_seed) noexcept EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    bool MixExtract(unsigned char* out, size_t num, CSHA512&& hasher, bool strong_seed) noexcept
     {
         assert(num <= 32);
         unsigned char buf[64];
@@ -584,9 +586,14 @@ void RandAddEvent(const uint32_t event_info) noexcept { GetRNGState().AddEvent(e
 
 bool g_mock_deterministic_tests{false};
 
-uint64_t GetRandInternal(uint64_t nMax) noexcept
+uint64_t GetRand(uint64_t nMax) noexcept
 {
     return FastRandomContext(g_mock_deterministic_tests).randrange(nMax);
+}
+
+int GetRandInt(int nMax) noexcept
+{
+    return GetRand(nMax);
 }
 
 uint256 GetRandHash() noexcept

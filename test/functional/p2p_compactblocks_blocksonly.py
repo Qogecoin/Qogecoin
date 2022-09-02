@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2021-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test that a node in blocksonly mode does not request compact blocks."""
@@ -48,7 +48,7 @@ class P2PCompactBlocksBlocksOnly(QogecoinTestFramework):
         p2p_conn_high_bw = self.nodes[1].add_p2p_connection(P2PInterface())
         p2p_conn_low_bw = self.nodes[3].add_p2p_connection(P2PInterface())
         for conn in [p2p_conn_blocksonly, p2p_conn_high_bw, p2p_conn_low_bw]:
-            assert_equal(conn.message_count['sendcmpct'], 1)
+            assert_equal(conn.message_count['sendcmpct'], 2)
             conn.send_and_ping(msg_sendcmpct(announce=False, version=2))
 
         # Nodes:
@@ -74,14 +74,14 @@ class P2PCompactBlocksBlocksOnly(QogecoinTestFramework):
         # receiving a new valid block at the tip.
         p2p_conn_blocksonly.send_and_ping(msg_block(block0))
         assert_equal(int(self.nodes[0].getbestblockhash(), 16), block0.sha256)
-        assert_equal(p2p_conn_blocksonly.message_count['sendcmpct'], 1)
+        assert_equal(p2p_conn_blocksonly.message_count['sendcmpct'], 2)
         assert_equal(p2p_conn_blocksonly.last_message['sendcmpct'].announce, False)
 
         # A normal node participating in transaction relay should request BIP152
         # high bandwidth mode upon receiving a new valid block at the tip.
         p2p_conn_high_bw.send_and_ping(msg_block(block0))
         assert_equal(int(self.nodes[1].getbestblockhash(), 16), block0.sha256)
-        p2p_conn_high_bw.wait_until(lambda: p2p_conn_high_bw.message_count['sendcmpct'] == 2)
+        p2p_conn_high_bw.wait_until(lambda: p2p_conn_high_bw.message_count['sendcmpct'] == 3)
         assert_equal(p2p_conn_high_bw.last_message['sendcmpct'].announce, True)
 
         # Don't send a block from the p2p_conn_low_bw so the low bandwidth node

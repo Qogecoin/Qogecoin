@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Stress tests related to node initialization."""
@@ -49,33 +49,33 @@ class InitStressTest(QogecoinTestFramework):
             assert_equal(200, node.getblockcount())
 
         lines_to_terminate_after = [
-            b'Validating signatures for all blocks',
-            b'scheduler thread start',
-            b'Starting HTTP server',
-            b'Loading P2P addresses',
-            b'Loading banlist',
-            b'Loading block index',
-            b'Switching active chainstate',
-            b'Checking all blk files are present',
-            b'Loaded best chain:',
-            b'init message: Verifying blocks',
-            b'init message: Starting network threads',
-            b'net thread start',
-            b'addcon thread start',
-            b'loadblk thread start',
-            b'txindex thread start',
-            b'block filter index thread start',
-            b'coinstatsindex thread start',
-            b'msghand thread start',
-            b'net thread start',
-            b'addcon thread start',
+            'Validating signatures for all blocks',
+            'scheduler thread start',
+            'Starting HTTP server',
+            'Loading P2P addresses',
+            'Loading banlist',
+            'Loading block index',
+            'Switching active chainstate',
+            'Checking all blk files are present',
+            'Loaded best chain:',
+            'init message: Verifying blocks',
+            'init message: Starting network threads',
+            'net thread start',
+            'addcon thread start',
+            'loadblk thread start',
+            'txindex thread start',
+            'block filter index thread start',
+            'coinstatsindex thread start',
+            'msghand thread start',
+            'net thread start',
+            'addcon thread start',
         ]
         if self.is_wallet_compiled():
-            lines_to_terminate_after.append(b'Verifying wallet')
+            lines_to_terminate_after.append('Verifying wallet')
 
         for terminate_line in lines_to_terminate_after:
-            self.log.info(f"Starting node and will exit after line {terminate_line}")
-            with node.wait_for_debug_log([terminate_line]):
+            self.log.info(f"Starting node and will exit after line '{terminate_line}'")
+            with node.wait_for_debug_log([terminate_line], ignore_case=True):
                 node.start(extra_args=['-txindex=1', '-blockfilterindex=1', '-coinstatsindex=1'])
             self.log.debug("Terminating node after terminate line was found")
             sigterm_node()

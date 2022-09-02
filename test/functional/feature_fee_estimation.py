@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test fee estimation code."""
@@ -51,9 +51,9 @@ def small_txpuzzle_randfee(
     if total_in <= amount + fee:
         raise RuntimeError(f"Insufficient funds: need {amount + fee}, have {total_in}")
     tx = wallet.create_self_transfer_multi(
+        from_node=from_node,
         utxos_to_spend=utxos_to_spend,
-        fee_per_output=0,
-    )["tx"]
+        fee_per_output=0)
     tx.vout[0].nValue = int((total_in - amount - fee) * COIN)
     tx.vout.append(deepcopy(tx.vout[0]))
     tx.vout[1].nValue = int(amount * COIN)

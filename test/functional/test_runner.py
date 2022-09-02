@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Run regression test suite.
@@ -28,7 +28,7 @@ import logging
 import unittest
 
 # Formatting. Default colors to empty strings.
-DEFAULT, BOLD, GREEN, RED = ("", ""), ("", ""), ("", ""), ("", "")
+BOLD, GREEN, RED, GREY = ("", ""), ("", ""), ("", ""), ("", "")
 try:
     # Make sure python thinks it can write unicode to its stdout
     "\u2713".encode("utf_8").decode(sys.stdout.encoding)
@@ -59,10 +59,10 @@ if os.name != 'nt' or sys.getwindowsversion() >= (10, 0, 14393): #type:ignore
         kernel32.SetConsoleMode(stderr, stderr_mode.value | ENABLE_VIRTUAL_TERMINAL_PROCESSING)
     # primitive formatting on supported
     # terminal via ANSI escape sequences:
-    DEFAULT = ('\033[0m', '\033[0m')
     BOLD = ('\033[0m', '\033[1m')
     GREEN = ('\033[0m', '\033[0;32m')
     RED = ('\033[0m', '\033[0;31m')
+    GREY = ('\033[0m', '\033[1;30m')
 
 TEST_EXIT_PASSED = 0
 TEST_EXIT_SKIPPED = 77
@@ -130,7 +130,6 @@ BASE_SCRIPTS = [
     'wallet_address_types.py --descriptors',
     'feature_bip68_sequence.py',
     'p2p_feefilter.py',
-    'rpc_packages.py',
     'feature_reindex.py',
     'feature_abortnode.py',
     # vv Tests less than 30s vv
@@ -156,10 +155,8 @@ BASE_SCRIPTS = [
     'mempool_spend_coinbase.py',
     'wallet_avoidreuse.py --legacy-wallet',
     'wallet_avoidreuse.py --descriptors',
-    'wallet_avoid_mixing_output_types.py --descriptors',
     'mempool_reorg.py',
     'mempool_persist.py',
-    'p2p_block_sync.py',
     'wallet_multiwallet.py --legacy-wallet',
     'wallet_multiwallet.py --descriptors',
     'wallet_multiwallet.py --usecli',
@@ -183,10 +180,10 @@ BASE_SCRIPTS = [
     'rpc_whitelist.py',
     'feature_proxy.py',
     'feature_syscall_sandbox.py',
-    'wallet_signrawtransactionwithwallet.py --legacy-wallet',
-    'wallet_signrawtransactionwithwallet.py --descriptors',
-    'rpc_signrawtransactionwithkey.py',
+    'rpc_signrawtransaction.py --legacy-wallet',
+    'rpc_signrawtransaction.py --descriptors',
     'rpc_rawtransaction.py --legacy-wallet',
+    'rpc_rawtransaction.py --descriptors',
     'wallet_groups.py --legacy-wallet',
     'wallet_transactiontime_rescan.py --descriptors',
     'wallet_transactiontime_rescan.py --legacy-wallet',
@@ -206,7 +203,6 @@ BASE_SCRIPTS = [
     'wallet_keypool.py --legacy-wallet',
     'wallet_keypool.py --descriptors',
     'wallet_descriptor.py --descriptors',
-    'wallet_miniscript.py',
     'feature_maxtipage.py',
     'p2p_nobloomfilter_messages.py',
     'p2p_filter.py',
@@ -235,6 +231,7 @@ BASE_SCRIPTS = [
     'mempool_packages.py',
     'mempool_package_onemore.py',
     'rpc_createmultisig.py',
+    'rpc_packages.py',
     'mempool_package_limits.py',
     'feature_versionbits_warning.py',
     'rpc_preciousblock.py',
@@ -247,8 +244,8 @@ BASE_SCRIPTS = [
     'rpc_generate.py',
     'wallet_balance.py --legacy-wallet',
     'wallet_balance.py --descriptors',
-    'p2p_initial_headers_sync.py',
-    'feature_nulldummy.py',
+    'feature_nulldummy.py --legacy-wallet',
+    'feature_nulldummy.py --descriptors',
     'mempool_accept.py',
     'mempool_expiry.py',
     'wallet_import_rescan.py --legacy-wallet',
@@ -266,8 +263,6 @@ BASE_SCRIPTS = [
     'wallet_implicitsegwit.py --legacy-wallet',
     'rpc_named_arguments.py',
     'feature_startupnotify.py',
-    'wallet_simulaterawtx.py --legacy-wallet',
-    'wallet_simulaterawtx.py --descriptors',
     'wallet_listsinceblock.py --legacy-wallet',
     'wallet_listsinceblock.py --descriptors',
     'wallet_listdescriptors.py --descriptors',
@@ -321,7 +316,6 @@ BASE_SCRIPTS = [
     'feature_unsupported_utxo_db.py',
     'feature_logging.py',
     'feature_anchors.py',
-    'mempool_datacarrier.py',
     'feature_coinstatsindex.py',
     'wallet_orphanedreward.py',
     'wallet_timelock.py',
@@ -334,7 +328,7 @@ BASE_SCRIPTS = [
     'feature_presegwit_node_upgrade.py',
     'feature_settings.py',
     'rpc_getdescriptorinfo.py',
-    'rpc_mempool_info.py',
+    'rpc_mempool_entry_fee_fields_deprecation.py',
     'rpc_help.py',
     'feature_dirsymlinks.py',
     'feature_help.py',
@@ -378,11 +372,11 @@ def main():
 
     args, unknown_args = parser.parse_known_args()
     if not args.ansi:
-        global DEFAULT, BOLD, GREEN, RED
-        DEFAULT = ("", "")
+        global BOLD, GREEN, RED, GREY
         BOLD = ("", "")
         GREEN = ("", "")
         RED = ("", "")
+        GREY = ("", "")
 
     # args to be passed on always start with two dashes; tests are the remaining unknown args
     tests = [arg for arg in unknown_args if arg[:2] != "--"]
@@ -726,7 +720,7 @@ class TestResult():
             color = RED
             glyph = CROSS
         elif self.status == "Skipped":
-            color = DEFAULT
+            color = GREY
             glyph = CIRCLE
 
         return color[1] + "%s | %s%s | %s s\n" % (self.name.ljust(self.padding), glyph, self.status.ljust(7), self.time) + color[0]

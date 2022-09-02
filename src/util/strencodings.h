@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,18 +9,16 @@
 #ifndef QOGECOIN_UTIL_STRENCODINGS_H
 #define QOGECOIN_UTIL_STRENCODINGS_H
 
+#include <attributes.h>
 #include <span.h>
 #include <util/string.h>
 
 #include <charconv>
-#include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <string>
-#include <string_view>
-#include <system_error>
-#include <type_traits>
 #include <vector>
 
 /** Used by SanitizeString() */
@@ -57,9 +55,7 @@ enum class ByteUnit : uint64_t {
 * @return           A new string without unsafe chars
 */
 std::string SanitizeString(std::string_view str, int rule = SAFE_CHARS_DEFAULT);
-/** Parse the hex string into bytes (uint8_t or std::byte). Ignores whitespace. */
-template <typename Byte = uint8_t>
-std::vector<Byte> ParseHex(std::string_view str);
+std::vector<unsigned char> ParseHex(std::string_view str);
 signed char HexDigit(char c);
 /* Returns true if each character in str is a hex character, and has an even
  * number of hex digits.*/

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -31,7 +31,7 @@ private:
     FlatFilePos m_next_filter_pos;
     std::unique_ptr<FlatFileSeq> m_filter_fileseq;
 
-    bool ReadFilterFromDisk(const FlatFilePos& pos, const uint256& hash, BlockFilter& filter) const;
+    bool ReadFilterFromDisk(const FlatFilePos& pos, BlockFilter& filter) const;
     size_t WriteFilterToDisk(FlatFilePos& pos, const BlockFilter& filter);
 
     Mutex m_cs_headers_cache;
@@ -41,13 +41,13 @@ private:
     bool AllowPrune() const override { return true; }
 
 protected:
-    bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
+    bool Init() override;
 
-    bool CustomCommit(CDBBatch& batch) override;
+    bool CommitInternal(CDBBatch& batch) override;
 
-    bool CustomAppend(const interfaces::BlockInfo& block) override;
+    bool WriteBlock(const CBlock& block, const CBlockIndex* pindex) override;
 
-    bool CustomRewind(const interfaces::BlockKey& current_tip, const interfaces::BlockKey& new_tip) override;
+    bool Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip) override;
 
     BaseIndex::DB& GetDB() const override { return *m_db; }
 
@@ -55,7 +55,7 @@ protected:
 
 public:
     /** Constructs the index, which becomes available to be queried. */
-    explicit BlockFilterIndex(std::unique_ptr<interfaces::Chain> chain, BlockFilterType filter_type,
+    explicit BlockFilterIndex(BlockFilterType filter_type,
                               size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
 
     BlockFilterType GetFilterType() const { return m_filter_type; }
@@ -64,7 +64,7 @@ public:
     bool LookupFilter(const CBlockIndex* block_index, BlockFilter& filter_out) const;
 
     /** Get a single filter header by block. */
-    bool LookupFilterHeader(const CBlockIndex* block_index, uint256& header_out) EXCLUSIVE_LOCKS_REQUIRED(!m_cs_headers_cache);
+    bool LookupFilterHeader(const CBlockIndex* block_index, uint256& header_out);
 
     /** Get a range of filters between two heights on a chain. */
     bool LookupFilterRange(int start_height, const CBlockIndex* stop_index,
@@ -88,7 +88,7 @@ void ForEachBlockFilterIndex(std::function<void (BlockFilterIndex&)> fn);
  * Initialize a block filter index for the given type if one does not already exist. Returns true if
  * a new index is created and false if one has already been initialized.
  */
-bool InitBlockFilterIndex(std::function<std::unique_ptr<interfaces::Chain>()> make_chain, BlockFilterType filter_type,
+bool InitBlockFilterIndex(BlockFilterType filter_type,
                           size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
 
 /**

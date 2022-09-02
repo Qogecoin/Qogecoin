@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2020 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2013-2020 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,7 +23,6 @@ endif
 
 QOGECOIND_BIN=$(top_builddir)/src/$(QOGECOIN_DAEMON_NAME)$(EXEEXT)
 QOGECOIN_QT_BIN=$(top_builddir)/src/qt/$(QOGECOIN_GUI_NAME)$(EXEEXT)
-QOGECOIN_TEST_BIN=$(top_builddir)/src/test/$(QOGECOIN_TEST_NAME)$(EXEEXT)
 QOGECOIN_CLI_BIN=$(top_builddir)/src/$(QOGECOIN_CLI_NAME)$(EXEEXT)
 QOGECOIN_TX_BIN=$(top_builddir)/src/$(QOGECOIN_TX_NAME)$(EXEEXT)
 QOGECOIN_UTIL_BIN=$(top_builddir)/src/$(QOGECOIN_UTIL_NAME)$(EXEEXT)
@@ -79,7 +78,6 @@ $(QOGECOIN_WIN_INSTALLER): all-recursive
 	$(MKDIR_P) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(QOGECOIND_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(QOGECOIN_QT_BIN) $(top_builddir)/release
-	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(QOGECOIN_TEST_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(QOGECOIN_CLI_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(QOGECOIN_TX_BIN) $(top_builddir)/release
 	STRIPPROG="$(STRIP)" $(INSTALL_STRIP_PROGRAM) $(QOGECOIN_WALLET_BIN) $(top_builddir)/release
@@ -135,7 +133,7 @@ $(OSX_DMG): deploydir
 	$(XORRISOFS) -D -l -V "$(OSX_VOLNAME)" -no-pad -r -dir-mode 0755 -o $@ $(APP_DIST_DIR) -- $(if $(SOURCE_DATE_EPOCH),-volume_date all_file_dates =$(SOURCE_DATE_EPOCH))
 
 $(APP_DIST_DIR)/$(OSX_APP)/Contents/MacOS/Qogecoin-Qt: $(OSX_APP_BUILT) $(OSX_PACKAGING)
-	INSTALL_NAME_TOOL=$(INSTALL_NAME_TOOL) OTOOL=$(OTOOL) STRIP=$(STRIP) $(PYTHON) $(OSX_DEPLOY_SCRIPT) $(OSX_APP) $(OSX_VOLNAME) -translations-dir=$(QT_TRANSLATION_DIR)
+	INSTALLNAMETOOL=$(INSTALLNAMETOOL) OTOOL=$(OTOOL) STRIP=$(STRIP) $(PYTHON) $(OSX_DEPLOY_SCRIPT) $(OSX_APP) $(OSX_VOLNAME) -translations-dir=$(QT_TRANSLATION_DIR)
 
 deploydir: $(APP_DIST_DIR)/$(OSX_APP)/Contents/MacOS/Qogecoin-Qt
 endif !BUILD_DARWIN
@@ -176,6 +174,7 @@ LCOV_FILTER_PATTERN = \
 	-p "src/leveldb/" \
 	-p "src/crc32c/" \
 	-p "src/bench/" \
+	-p "src/univalue" \
 	-p "src/crypto/ctaes" \
 	-p "src/minisketch" \
 	-p "src/secp256k1" \

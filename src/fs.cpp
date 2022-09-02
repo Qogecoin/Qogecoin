@@ -1,9 +1,8 @@
-// Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <fs.h>
-#include <util/syserror.h>
 
 #ifndef WIN32
 #include <cstring>
@@ -12,6 +11,9 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 #else
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <codecvt>
 #include <limits>
 #include <windows.h>
@@ -42,7 +44,7 @@ fs::path AbsPathJoin(const fs::path& base, const fs::path& path)
 
 static std::string GetErrorReason()
 {
-    return SysErrorString(errno);
+    return std::strerror(errno);
 }
 
 FileLock::FileLock(const fs::path& file)

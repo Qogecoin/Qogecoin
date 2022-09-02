@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,6 @@
 
 #include <cstdio>
 #include <filesystem>
-#include <functional>
 #include <iomanip>
 #include <ios>
 #include <ostream>
@@ -69,11 +68,7 @@ public:
 
 static inline path u8path(const std::string& utf8_str)
 {
-#if __cplusplus < 202002L
     return std::filesystem::u8path(utf8_str);
-#else
-    return std::filesystem::path(std::u8string{utf8_str.begin(), utf8_str.end()});
-#endif
 }
 
 // Disallow implicit std::string conversion for absolute to avoid
@@ -185,7 +180,6 @@ bool create_directories(const std::filesystem::path& p, std::error_code& ec) = d
 
 /** Bridge operations to C stdio */
 namespace fsbridge {
-    using FopenFn = std::function<FILE*(const fs::path&, const char*)>;
     FILE *fopen(const fs::path& p, const char *mode);
 
     /**

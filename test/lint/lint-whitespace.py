@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2017-2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2017-2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -22,6 +22,7 @@ EXCLUDED_DIRS = ["depends/patches/",
                  "src/crc32c/",
                  "src/secp256k1/",
                  "src/minisketch/",
+                 "src/univalue/",
                  "doc/release-notes/",
                  "src/qt/locale"]
 

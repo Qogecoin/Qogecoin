@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -181,7 +181,7 @@ std::string PSBTOperationsDialog::renderTransaction(const PartiallySignedTransac
         ExtractDestination(out.scriptPubKey, address);
         totalAmount += out.nValue;
         tx_description.append(tr(" * Sends %1 to %2")
-            .arg(QogecoinUnits::formatWithUnit(QogecoinUnit::QOGE, out.nValue))
+            .arg(QogecoinUnits::formatWithUnit(QogecoinUnit::Qoge, out.nValue))
             .arg(QString::fromStdString(EncodeDestination(address))));
         tx_description.append("<br>");
     }
@@ -193,7 +193,7 @@ std::string PSBTOperationsDialog::renderTransaction(const PartiallySignedTransac
         tx_description.append(tr("Unable to calculate transaction fee or total transaction amount."));
     } else {
         tx_description.append(tr("Pays transaction fee: "));
-        tx_description.append(QogecoinUnits::formatWithUnit(QogecoinUnit::QOGE, *analysis.fee));
+        tx_description.append(QogecoinUnits::formatWithUnit(QogecoinUnit::Qoge, *analysis.fee));
 
         // add total amount in all subdivision units
         tx_description.append("<hr />");

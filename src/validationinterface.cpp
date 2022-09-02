@@ -1,11 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <validationinterface.h>
 
-#include <attributes.h>
 #include <chain.h>
 #include <consensus/validation.h>
 #include <logging.h>
@@ -17,16 +16,14 @@
 #include <unordered_map>
 #include <utility>
 
-/**
- * MainSignalsImpl manages a list of shared_ptr<CValidationInterface> callbacks.
- *
- * A std::unordered_map is used to track what callbacks are currently
- * registered, and a std::list is used to store the callbacks that are
- * currently registered as well as any callbacks that are just unregistered
- * and about to be deleted when they are done executing.
- */
-class MainSignalsImpl
-{
+//! The MainSignalsInstance manages a list of shared_ptr<CValidationInterface>
+//! callbacks.
+//!
+//! A std::unordered_map is used to track what callbacks are currently
+//! registered, and a std::list is to used to store the callbacks that are
+//! currently registered as well as any callbacks that are just unregistered
+//! and about to be deleted when they are done executing.
+struct MainSignalsInstance {
 private:
     Mutex m_mutex;
     //! List entries consist of a callback pointer and reference count. The
@@ -43,9 +40,9 @@ public:
     // our own queue here :(
     SingleThreadedSchedulerClient m_schedulerClient;
 
-    explicit MainSignalsImpl(CScheduler& scheduler LIFETIMEBOUND) : m_schedulerClient(scheduler) {}
+    explicit MainSignalsInstance(CScheduler *pscheduler) : m_schedulerClient(pscheduler) {}
 
-    void Register(std::shared_ptr<CValidationInterface> callbacks) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    void Register(std::shared_ptr<CValidationInterface> callbacks)
     {
         LOCK(m_mutex);
         auto inserted = m_map.emplace(callbacks.get(), m_list.end());
@@ -53,7 +50,7 @@ public:
         inserted.first->second->callbacks = std::move(callbacks);
     }
 
-    void Unregister(CValidationInterface* callbacks) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    void Unregister(CValidationInterface* callbacks)
     {
         LOCK(m_mutex);
         auto it = m_map.find(callbacks);
@@ -67,7 +64,7 @@ public:
     //! map entry. After this call, the list may still contain callbacks that
     //! are currently executing, but it will be cleared when they are done
     //! executing.
-    void Clear() EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    void Clear()
     {
         LOCK(m_mutex);
         for (const auto& entry : m_map) {
@@ -76,7 +73,7 @@ public:
         m_map.clear();
     }
 
-    template<typename F> void Iterate(F&& f) EXCLUSIVE_LOCKS_REQUIRED(!m_mutex)
+    template<typename F> void Iterate(F&& f)
     {
         WAIT_LOCK(m_mutex, lock);
         for (auto it = m_list.begin(); it != m_list.end();) {
@@ -95,7 +92,7 @@ static CMainSignals g_signals;
 void CMainSignals::RegisterBackgroundSignalScheduler(CScheduler& scheduler)
 {
     assert(!m_internals);
-    m_internals = std::make_unique<MainSignalsImpl>(scheduler);
+    m_internals.reset(new MainSignalsInstance(&scheduler));
 }
 
 void CMainSignals::UnregisterBackgroundSignalScheduler()

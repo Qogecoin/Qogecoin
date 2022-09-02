@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -588,6 +588,7 @@ CScript BuildScript(Ts&&... inputs)
     int cnt{0};
 
     ([&ret, &cnt] (Ts&& input) {
+        cnt++;
         if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<Ts>>, CScript>) {
             // If it is a CScript, extend ret with it. Move or copy the first element instead.
             if (cnt == 0) {
@@ -599,7 +600,6 @@ CScript BuildScript(Ts&&... inputs)
             // Otherwise invoke CScript::operator<<.
             ret << input;
         }
-        cnt++;
     } (std::forward<Ts>(inputs)), ...);
 
     return ret;

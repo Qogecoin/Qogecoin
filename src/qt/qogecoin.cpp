@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,7 +13,7 @@
 #include <interfaces/handler.h>
 #include <interfaces/init.h>
 #include <interfaces/node.h>
-#include <node/interface_ui.h>
+#include <node/ui_interface.h>
 #include <noui.h>
 #include <qt/qogecoingui.h>
 #include <qt/clientmodel.h>
@@ -77,6 +77,8 @@ Q_DECLARE_METATYPE(CAmount)
 Q_DECLARE_METATYPE(SynchronizationState)
 Q_DECLARE_METATYPE(uint256)
 
+using node::NodeContext;
+
 static void RegisterMetaTypes()
 {
     // Register meta types used for QMetaObject::invokeMethod and Qt::QueuedConnection
@@ -94,11 +96,7 @@ static void RegisterMetaTypes()
     qRegisterMetaType<QMessageBox::Icon>("QMessageBox::Icon");
     qRegisterMetaType<interfaces::BlockAndHeaderTipInfo>("interfaces::BlockAndHeaderTipInfo");
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     qRegisterMetaTypeStreamOperators<QogecoinUnit>("QogecoinUnit");
-#else
-    qRegisterMetaType<QogecoinUnit>("QogecoinUnit");
-#endif
 }
 
 static QString GetLangTerritory()
@@ -137,30 +135,21 @@ static void initTranslations(QTranslator &qtTranslatorBase, QTranslator &qtTrans
     // - First load the translator for the base language, without territory
     // - Then load the more specific locale translator
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-    const QString translation_path{QLibraryInfo::location(QLibraryInfo::TranslationsPath)};
-#else
-    const QString translation_path{QLibraryInfo::path(QLibraryInfo::TranslationsPath)};
-#endif
     // Load e.g. qt_de.qm
-    if (qtTranslatorBase.load("qt_" + lang, translation_path)) {
+    if (qtTranslatorBase.load("qt_" + lang, QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
         QApplication::installTranslator(&qtTranslatorBase);
-    }
 
     // Load e.g. qt_de_DE.qm
-    if (qtTranslator.load("qt_" + lang_territory, translation_path)) {
+    if (qtTranslator.load("qt_" + lang_territory, QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
         QApplication::installTranslator(&qtTranslator);
-    }
 
     // Load e.g. qogecoin_de.qm (shortcut "de" needs to be defined in qogecoin.qrc)
-    if (translatorBase.load(lang, ":/translations/")) {
+    if (translatorBase.load(lang, ":/translations/"))
         QApplication::installTranslator(&translatorBase);
-    }
 
     // Load e.g. qogecoin_de_DE.qm (shortcut "de_DE" needs to be defined in qogecoin.qrc)
-    if (translator.load(lang_territory, ":/translations/")) {
+    if (translator.load(lang_territory, ":/translations/"))
         QApplication::installTranslator(&translator);
-    }
 }
 
 static bool InitSettings()
@@ -270,26 +259,9 @@ void QogecoinApplication::createPaymentServer()
 }
 #endif
 
-bool QogecoinApplication::createOptionsModel(bool resetSettings)
+void QogecoinApplication::createOptionsModel(bool resetSettings)
 {
-    optionsModel = new OptionsModel(node(), this);
-    if (resetSettings) {
-        optionsModel->Reset();
-    }
-    bilingual_str error;
-    if (!optionsModel->Init(error)) {
-        fs::path settings_path;
-        if (gArgs.GetSettingsPath(&settings_path)) {
-            error += Untranslated("\n");
-            std::string quoted_path = strprintf("%s", fs::quoted(fs::PathToString(settings_path)));
-            error.original += strprintf("Settings file %s might be corrupt or invalid.", quoted_path);
-            error.translated += tr("Settings file %1 might be corrupt or invalid.").arg(QString::fromStdString(quoted_path)).toStdString();
-        }
-        InitError(error);
-        QMessageBox::critical(nullptr, PACKAGE_NAME, QString::fromStdString(error.translated));
-        return false;
-    }
-    return true;
+    optionsModel = new OptionsModel(this, resetSettings);
 }
 
 void QogecoinApplication::createWindow(const NetworkStyle *networkStyle)
@@ -320,6 +292,7 @@ void QogecoinApplication::createNode(interfaces::Init& init)
 {
     assert(!m_node);
     m_node = init.makeNode();
+    if (optionsModel) optionsModel->setNode(*m_node);
     if (m_splash) m_splash->setNode(*m_node);
 }
 
@@ -335,9 +308,7 @@ void QogecoinApplication::startThread()
 
     /*  communication to and from thread */
     connect(&m_executor.value(), &InitExecutor::initializeResult, this, &QogecoinApplication::initializeResult);
-    connect(&m_executor.value(), &InitExecutor::shutdownResult, this, [] {
-        QCoreApplication::exit(0);
-    });
+    connect(&m_executor.value(), &InitExecutor::shutdownResult, this, &QCoreApplication::quit);
     connect(&m_executor.value(), &InitExecutor::runawayException, this, &QogecoinApplication::handleRunawayException);
     connect(this, &QogecoinApplication::requestedInitialize, &m_executor.value(), &InitExecutor::initialize);
     connect(this, &QogecoinApplication::requestedShutdown, &m_executor.value(), &InitExecutor::shutdown);
@@ -355,7 +326,7 @@ void QogecoinApplication::parameterSetup()
 
 void QogecoinApplication::InitPruneSetting(int64_t prune_MiB)
 {
-    optionsModel->SetPruneTargetGB(PruneMiBtoGB(prune_MiB));
+    optionsModel->SetPruneTargetGB(PruneMiBtoGB(prune_MiB), true);
 }
 
 void QogecoinApplication::requestInitialize()
@@ -528,11 +499,9 @@ int GuiMain(int argc, char* argv[])
     Q_INIT_RESOURCE(qogecoin);
     Q_INIT_RESOURCE(qogecoin_locale);
 
-#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
     // Generate high-dpi pixmaps
     QApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
     QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
-#endif
 
 #if defined(QT_QPA_PLATFORM_ANDROID)
     QApplication::setAttribute(Qt::AA_DontUseNativeMenuBar);
@@ -664,21 +633,18 @@ int GuiMain(int argc, char* argv[])
     // Allow parameter interaction before we create the options model
     app.parameterSetup();
     GUIUtil::LogQtInfo();
-
-    if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
-        app.createSplashScreen(networkStyle.data());
-
-    app.createNode(*init);
-
     // Load GUI settings from QSettings
-    if (!app.createOptionsModel(gArgs.GetBoolArg("-resetguisettings", false))) {
-        return EXIT_FAILURE;
-    }
+    app.createOptionsModel(gArgs.GetBoolArg("-resetguisettings", false));
 
     if (did_show_intro) {
         // Store intro dialog settings other than datadir (network specific)
         app.InitPruneSetting(prune_MiB);
     }
+
+    if (gArgs.GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !gArgs.GetBoolArg("-min", false))
+        app.createSplashScreen(networkStyle.data());
+
+    app.createNode(*init);
 
     int rv = EXIT_SUCCESS;
     try

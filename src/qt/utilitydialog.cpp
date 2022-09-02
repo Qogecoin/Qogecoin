@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,8 +22,7 @@
 #include <QCloseEvent>
 #include <QLabel>
 #include <QMainWindow>
-#include <QRegularExpression>
-#include <QString>
+#include <QRegExp>
 #include <QTextCursor>
 #include <QTextTable>
 #include <QVBoxLayout>
@@ -45,8 +44,9 @@ HelpMessageDialog::HelpMessageDialog(QWidget *parent, bool about) :
         /// HTML-format the license message from the core
         QString licenseInfoHTML = QString::fromStdString(LicenseInfo());
         // Make URLs clickable
-        QRegularExpression uri(QStringLiteral("<(.*)>"), QRegularExpression::InvertedGreedinessOption);
-        licenseInfoHTML.replace(uri, QStringLiteral("<a href=\"\\1\">\\1</a>"));
+        QRegExp uri("<(.*)>", Qt::CaseSensitive, QRegExp::RegExp2);
+        uri.setMinimal(true); // use non-greedy matching
+        licenseInfoHTML.replace(uri, "<a href=\"\\1\">\\1</a>");
         // Replace newlines with HTML breaks
         licenseInfoHTML.replace("\n", "<br>");
 

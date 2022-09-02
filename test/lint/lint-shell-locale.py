@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2018-2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -41,7 +41,7 @@ def main():
     exit_code = 0
     shell_files = get_shell_files_list()
     for file_path in shell_files:
-        if re.search('src/(secp256k1|minisketch)/', file_path):
+        if re.search('src/(secp256k1|minisketch|univalue)/', file_path):
             continue
 
         with open(file_path, 'r', encoding='utf-8') as file_obj:

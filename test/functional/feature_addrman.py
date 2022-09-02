@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test addrman functionality"""
@@ -95,7 +95,7 @@ class AddrmanTest(QogecoinTestFramework):
         with open(peers_dat, "wb") as f:
             f.write(serialize_addrman()[:-1])
         self.nodes[0].assert_start_raises_init_error(
-            expected_msg=init_error("AutoFile::read: end of file.*"),
+            expected_msg=init_error("CAutoFile::read: end of file.*"),
             match=ErrorMatch.FULL_REGEX,
         )
 

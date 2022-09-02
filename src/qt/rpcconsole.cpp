@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,6 +26,14 @@
 #include <util/threadnames.h>
 
 #include <univalue.h>
+
+#ifdef ENABLE_WALLET
+#ifdef USE_BDB
+#include <wallet/bdb.h>
+#endif
+#include <wallet/db.h>
+#include <wallet/wallet.h>
+#endif
 
 #include <QAbstractButton>
 #include <QAbstractItemModel>
@@ -112,7 +120,7 @@ public:
         connect(&timer, &QTimer::timeout, [this]{ func(); });
         timer.start(millis);
     }
-    ~QtRPCTimerBase() = default;
+    ~QtRPCTimerBase() {}
 private:
     QTimer timer;
     std::function<void()> func;
@@ -121,7 +129,7 @@ private:
 class QtRPCTimerInterface: public RPCTimerInterface
 {
 public:
-    ~QtRPCTimerInterface() = default;
+    ~QtRPCTimerInterface() {}
     const char *Name() override { return "Qt"; }
     RPCTimerBase* NewTimer(std::function<void()>& func, int64_t millis) override
     {
@@ -449,7 +457,7 @@ void RPCExecutor::request(const QString &command, const WalletModel* wallet_mode
     {
         try // Nice formatting for standard-format error
         {
-            int code = find_value(objError, "code").getInt<int>();
+            int code = find_value(objError, "code").get_int();
             std::string message = find_value(objError, "message").get_str();
             Q_EMIT reply(RPCConsole::CMD_ERROR, QString::fromStdString(message) + " (code " + QString::number(code) + ")");
         }
@@ -863,7 +871,7 @@ void RPCConsole::clear(bool keep_prompt)
     }
 
     // Set default style sheet
-#ifdef Q_OS_MACOS
+#ifdef Q_OS_MAC
     QFontInfo fixedFontInfo(GUIUtil::fixedPitchFont(/*use_embedded_font=*/true));
 #else
     QFontInfo fixedFontInfo(GUIUtil::fixedPitchFont());
@@ -1162,6 +1170,7 @@ void RPCConsole::updateDetailWidget()
     if (!stats->nodeStats.addrLocal.empty())
         peerAddrDetails += "<br />" + tr("via %1").arg(QString::fromStdString(stats->nodeStats.addrLocal));
     ui->peerHeading->setText(peerAddrDetails);
+    ui->peerServices->setText(GUIUtil::formatServicesStr(stats->nodeStats.nServices));
     QString bip152_hb_settings;
     if (stats->nodeStats.m_bip152_highbandwidth_to) bip152_hb_settings = ts.to;
     if (stats->nodeStats.m_bip152_highbandwidth_from) bip152_hb_settings += (bip152_hb_settings.isEmpty() ? ts.from : QLatin1Char('/') + ts.from);
@@ -1196,7 +1205,6 @@ void RPCConsole::updateDetailWidget()
     // This check fails for example if the lock was busy and
     // nodeStateStats couldn't be fetched.
     if (stats->fNodeStateStatsAvailable) {
-        ui->peerServices->setText(GUIUtil::formatServicesStr(stats->nodeStateStats.their_services));
         // Sync height is init to -1
         if (stats->nodeStateStats.nSyncHeight > -1) {
             ui->peerSyncHeight->setText(QString("%1").arg(stats->nodeStateStats.nSyncHeight));

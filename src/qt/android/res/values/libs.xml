@@ -10,5 +10,8 @@
         <item>
             x86_64;libqogecoin-qt_x86_64.so
         </item>
+        <item>
+            x86;libqogecoin-qt_x86.so
+        </item>
     </array>
 </resources>

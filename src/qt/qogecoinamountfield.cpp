@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -125,7 +125,7 @@ public:
 
             const QFontMetrics fm(fontMetrics());
             int h = lineEdit()->minimumSizeHint().height();
-            int w = GUIUtil::TextWidth(fm, QogecoinUnits::format(QogecoinUnit::QOGE, QogecoinUnits::maxMoney(), false, QogecoinUnits::SeparatorStyle::ALWAYS));
+            int w = GUIUtil::TextWidth(fm, QogecoinUnits::format(QogecoinUnit::Qoge, QogecoinUnits::maxMoney(), false, QogecoinUnits::SeparatorStyle::ALWAYS));
             w += 2; // cursor blinking space
 
             QStyleOptionSpinBox opt;
@@ -150,7 +150,7 @@ public:
     }
 
 private:
-    QogecoinUnit currentUnit{QogecoinUnit::QOGE};
+    QogecoinUnit currentUnit{QogecoinUnit::Qoge};
     CAmount singleStep{CAmount(100000)}; // satoshis
     mutable QSize cachedMinimumSizeHint;
     bool m_allow_empty{true};

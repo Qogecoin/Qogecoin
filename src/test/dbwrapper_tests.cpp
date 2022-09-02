@@ -1,4 +1,4 @@
-// Copyright (c) 2012-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2012-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -321,7 +321,7 @@ struct StringContentsSerializer {
     // Used to make two serialized objects the same while letting them have different lengths
     // This is a terrible idea
     std::string str;
-    StringContentsSerializer() = default;
+    StringContentsSerializer() {}
     explicit StringContentsSerializer(const std::string& inp) : str(inp) {}
 
     StringContentsSerializer& operator+=(const std::string& s) {

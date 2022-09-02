@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,7 +13,6 @@
 
 #include <assert.h>
 
-struct bilingual_str;
 namespace interfaces {
 class Node;
 }
@@ -42,7 +41,7 @@ class OptionsModel : public QAbstractListModel
     Q_OBJECT
 
 public:
-    explicit OptionsModel(interfaces::Node& node, QObject *parent = nullptr);
+    explicit OptionsModel(QObject *parent = nullptr, bool resetSettings = false);
 
     enum OptionID {
         StartAtStartup,         // bool
@@ -75,14 +74,12 @@ public:
         OptionIDRowCount,
     };
 
-    bool Init(bilingual_str& error);
+    void Init(bool resetSettings = false);
     void Reset();
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const override;
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const override;
     bool setData(const QModelIndex & index, const QVariant & value, int role = Qt::EditRole) override;
-    QVariant getOption(OptionID option) const;
-    bool setOption(OptionID option, const QVariant& value);
     /** Updates current unit in memory, settings and emits displayUnitChanged(new_unit) signal */
     void setDisplayUnit(const QVariant& new_unit);
 
@@ -99,16 +96,18 @@ public:
     const QString& getOverriddenByCommandLine() { return strOverriddenByCommandLine; }
 
     /* Explicit setters */
-    void SetPruneTargetGB(int prune_target_gb);
+    void SetPruneEnabled(bool prune, bool force = false);
+    void SetPruneTargetGB(int prune_target_gb, bool force = false);
 
     /* Restart flag helper */
     void setRestartRequired(bool fRequired);
     bool isRestartRequired() const;
 
-    interfaces::Node& node() const { return m_node; }
+    interfaces::Node& node() const { assert(m_node); return *m_node; }
+    void setNode(interfaces::Node& node) { assert(!m_node); m_node = &node; }
 
 private:
-    interfaces::Node& m_node;
+    interfaces::Node* m_node = nullptr;
     /* Qt-only settings */
     bool m_show_tray_icon;
     bool fMinimizeToTray;
@@ -120,16 +119,6 @@ private:
     bool fCoinControlFeatures;
     bool m_sub_fee_from_amount;
     bool m_enable_psbt_controls;
-
-    //! In-memory settings for display. These are stored persistently by the
-    //! qogecoin node but it's also nice to store them in memory to prevent them
-    //! getting cleared when enable/disable toggles are used in the GUI.
-    int m_prune_size_gb;
-    QString m_proxy_ip;
-    QString m_proxy_port;
-    QString m_onion_ip;
-    QString m_onion_port;
-
     /* settings that were overridden by command-line */
     QString strOverriddenByCommandLine;
 
@@ -138,7 +127,6 @@ private:
 
     // Check settings version and upgrade default values if required
     void checkAndMigrate();
-
 Q_SIGNALS:
     void displayUnitChanged(QogecoinUnit unit);
     void coinControlFeaturesChanged(bool);

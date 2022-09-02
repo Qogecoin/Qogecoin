@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,14 +10,12 @@
 #include <serialize.h>
 #include <txdb.h>
 #include <undo.h>
-#include <util/system.h>
 #include <validation.h>
 
-using kernel::CCoinsStats;
-using kernel::GetBogoSize;
-using kernel::TxOutSer;
-
+using node::CCoinsStats;
+using node::GetBogoSize;
 using node::ReadBlockFromDisk;
+using node::TxOutSer;
 using node::UndoReadFromDisk;
 
 static constexpr uint8_t DB_BLOCK_HASH{'s'};
@@ -103,8 +101,7 @@ struct DBHashKey {
 
 std::unique_ptr<CoinStatsIndex> g_coin_stats_index;
 
-CoinStatsIndex::CoinStatsIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, bool f_memory, bool f_wipe)
-    : BaseIndex(std::move(chain))
+CoinStatsIndex::CoinStatsIndex(size_t n_cache_size, bool f_memory, bool f_wipe)
 {
     fs::path path{gArgs.GetDataDirNet() / "indexes" / "coinstats"};
     fs::create_directories(path);
@@ -112,27 +109,24 @@ CoinStatsIndex::CoinStatsIndex(std::unique_ptr<interfaces::Chain> chain, size_t 
     m_db = std::make_unique<CoinStatsIndex::DB>(path / "db", n_cache_size, f_memory, f_wipe);
 }
 
-bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
+bool CoinStatsIndex::WriteBlock(const CBlock& block, const CBlockIndex* pindex)
 {
     CBlockUndo block_undo;
-    const CAmount block_subsidy{GetBlockSubsidy(block.height, Params().GetConsensus())};
+    const CAmount block_subsidy{GetBlockSubsidy(pindex->nHeight, Params().GetConsensus())};
     m_total_subsidy += block_subsidy;
 
     // Ignore genesis block
-    if (block.height > 0) {
-        // pindex variable gives indexing code access to node internals. It
-        // will be removed in upcoming commit
-        const CBlockIndex* pindex = WITH_LOCK(cs_main, return m_chainstate->m_blockman.LookupBlockIndex(block.hash));
+    if (pindex->nHeight > 0) {
         if (!UndoReadFromDisk(block_undo, pindex)) {
             return false;
         }
 
         std::pair<uint256, DBVal> read_out;
-        if (!m_db->Read(DBHeightKey(block.height - 1), read_out)) {
+        if (!m_db->Read(DBHeightKey(pindex->nHeight - 1), read_out)) {
             return false;
         }
 
-        uint256 expected_block_hash{*Assert(block.prev_hash)};
+        uint256 expected_block_hash{pindex->pprev->GetBlockHash()};
         if (read_out.first != expected_block_hash) {
             LogPrintf("WARNING: previous block header belongs to unexpected block %s; expected %s\n",
                       read_out.first.ToString(), expected_block_hash.ToString());
@@ -144,13 +138,12 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
         }
 
         // TODO: Deduplicate BIP30 related code
-        bool is_bip30_block{(block.height == 91722 && block.hash == uint256S("0x00000000000271a2dc26e7667f8419f2e15416dc6955e5a6c6cdf3f2574dd08e")) ||
-                            (block.height == 91812 && block.hash == uint256S("0x00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f"))};
+        bool is_bip30_block{(pindex->nHeight == 91722 && pindex->GetBlockHash() == uint256S("0x00000000000271a2dc26e7667f8419f2e15416dc6955e5a6c6cdf3f2574dd08e")) ||
+                            (pindex->nHeight == 91812 && pindex->GetBlockHash() == uint256S("0x00000000000af0aed4792b1acee3d966af36cf5def14935db8de83d6f9306f2f"))};
 
         // Add the new utxos created from the block
-        assert(block.data);
-        for (size_t i = 0; i < block.data->vtx.size(); ++i) {
-            const auto& tx{block.data->vtx.at(i)};
+        for (size_t i = 0; i < block.vtx.size(); ++i) {
+            const auto& tx{block.vtx.at(i)};
 
             // Skip duplicate txid coinbase transactions (BIP30).
             if (is_bip30_block && tx->IsCoinBase()) {
@@ -161,7 +154,7 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
 
             for (uint32_t j = 0; j < tx->vout.size(); ++j) {
                 const CTxOut& out{tx->vout[j]};
-                Coin coin{out, block.height, tx->IsCoinBase()};
+                Coin coin{out, pindex->nHeight, tx->IsCoinBase()};
                 COutPoint outpoint{tx->GetHash(), j};
 
                 // Skip unspendable coins
@@ -217,7 +210,7 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
     m_total_unspendables_unclaimed_rewards += unclaimed_rewards;
 
     std::pair<uint256, DBVal> value;
-    value.first = block.hash;
+    value.first = pindex->GetBlockHash();
     value.second.transaction_output_count = m_transaction_output_count;
     value.second.bogo_size = m_bogo_size;
     value.second.total_amount = m_total_amount;
@@ -237,7 +230,7 @@ bool CoinStatsIndex::CustomAppend(const interfaces::BlockInfo& block)
 
     // Intentionally do not update DB_MUHASH here so it stays in sync with
     // DB_BEST_BLOCK, and the index is not corrupted if there is an unclean shutdown.
-    return m_db->Write(DBHeightKey(block.height), value);
+    return m_db->Write(DBHeightKey(pindex->nHeight), value);
 }
 
 static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
@@ -266,15 +259,17 @@ static bool CopyHeightIndexToHashIndex(CDBIterator& db_it, CDBBatch& batch,
     return true;
 }
 
-bool CoinStatsIndex::CustomRewind(const interfaces::BlockKey& current_tip, const interfaces::BlockKey& new_tip)
+bool CoinStatsIndex::Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip)
 {
+    assert(current_tip->GetAncestor(new_tip->nHeight) == new_tip);
+
     CDBBatch batch(*m_db);
     std::unique_ptr<CDBIterator> db_it(m_db->NewIterator());
 
     // During a reorg, we need to copy all hash digests for blocks that are
     // getting disconnected from the height index to the hash index so we can
     // still find them when the height index entries are overwritten.
-    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, new_tip.height, current_tip.height)) {
+    if (!CopyHeightIndexToHashIndex(*db_it, batch, m_name, new_tip->nHeight, current_tip->nHeight)) {
         return false;
     }
 
@@ -282,8 +277,7 @@ bool CoinStatsIndex::CustomRewind(const interfaces::BlockKey& current_tip, const
 
     {
         LOCK(cs_main);
-        const CBlockIndex* iter_tip{m_chainstate->m_blockman.LookupBlockIndex(current_tip.hash)};
-        const CBlockIndex* new_tip_index{m_chainstate->m_blockman.LookupBlockIndex(new_tip.hash)};
+        const CBlockIndex* iter_tip{m_chainstate->m_blockman.LookupBlockIndex(current_tip->GetBlockHash())};
         const auto& consensus_params{Params().GetConsensus()};
 
         do {
@@ -297,59 +291,56 @@ bool CoinStatsIndex::CustomRewind(const interfaces::BlockKey& current_tip, const
             ReverseBlock(block, iter_tip);
 
             iter_tip = iter_tip->GetAncestor(iter_tip->nHeight - 1);
-        } while (new_tip_index != iter_tip);
+        } while (new_tip != iter_tip);
     }
 
-    return true;
+    return BaseIndex::Rewind(current_tip, new_tip);
 }
 
-static bool LookUpOne(const CDBWrapper& db, const interfaces::BlockKey& block, DBVal& result)
+static bool LookUpOne(const CDBWrapper& db, const CBlockIndex* block_index, DBVal& result)
 {
     // First check if the result is stored under the height index and the value
     // there matches the block hash. This should be the case if the block is on
     // the active chain.
     std::pair<uint256, DBVal> read_out;
-    if (!db.Read(DBHeightKey(block.height), read_out)) {
+    if (!db.Read(DBHeightKey(block_index->nHeight), read_out)) {
         return false;
     }
-    if (read_out.first == block.hash) {
+    if (read_out.first == block_index->GetBlockHash()) {
         result = std::move(read_out.second);
         return true;
     }
 
     // If value at the height index corresponds to an different block, the
     // result will be stored in the hash index.
-    return db.Read(DBHashKey(block.hash), result);
+    return db.Read(DBHashKey(block_index->GetBlockHash()), result);
 }
 
-std::optional<CCoinsStats> CoinStatsIndex::LookUpStats(const CBlockIndex* block_index) const
+bool CoinStatsIndex::LookUpStats(const CBlockIndex* block_index, CCoinsStats& coins_stats) const
 {
-    CCoinsStats stats{Assert(block_index)->nHeight, block_index->GetBlockHash()};
-    stats.index_used = true;
-
     DBVal entry;
-    if (!LookUpOne(*m_db, {block_index->GetBlockHash(), block_index->nHeight}, entry)) {
-        return std::nullopt;
+    if (!LookUpOne(*m_db, block_index, entry)) {
+        return false;
     }
 
-    stats.hashSerialized = entry.muhash;
-    stats.nTransactionOutputs = entry.transaction_output_count;
-    stats.nBogoSize = entry.bogo_size;
-    stats.total_amount = entry.total_amount;
-    stats.total_subsidy = entry.total_subsidy;
-    stats.total_unspendable_amount = entry.total_unspendable_amount;
-    stats.total_prevout_spent_amount = entry.total_prevout_spent_amount;
-    stats.total_new_outputs_ex_coinbase_amount = entry.total_new_outputs_ex_coinbase_amount;
-    stats.total_coinbase_amount = entry.total_coinbase_amount;
-    stats.total_unspendables_genesis_block = entry.total_unspendables_genesis_block;
-    stats.total_unspendables_bip30 = entry.total_unspendables_bip30;
-    stats.total_unspendables_scripts = entry.total_unspendables_scripts;
-    stats.total_unspendables_unclaimed_rewards = entry.total_unspendables_unclaimed_rewards;
+    coins_stats.hashSerialized = entry.muhash;
+    coins_stats.nTransactionOutputs = entry.transaction_output_count;
+    coins_stats.nBogoSize = entry.bogo_size;
+    coins_stats.total_amount = entry.total_amount;
+    coins_stats.total_subsidy = entry.total_subsidy;
+    coins_stats.total_unspendable_amount = entry.total_unspendable_amount;
+    coins_stats.total_prevout_spent_amount = entry.total_prevout_spent_amount;
+    coins_stats.total_new_outputs_ex_coinbase_amount = entry.total_new_outputs_ex_coinbase_amount;
+    coins_stats.total_coinbase_amount = entry.total_coinbase_amount;
+    coins_stats.total_unspendables_genesis_block = entry.total_unspendables_genesis_block;
+    coins_stats.total_unspendables_bip30 = entry.total_unspendables_bip30;
+    coins_stats.total_unspendables_scripts = entry.total_unspendables_scripts;
+    coins_stats.total_unspendables_unclaimed_rewards = entry.total_unspendables_unclaimed_rewards;
 
-    return stats;
+    return true;
 }
 
-bool CoinStatsIndex::CustomInit(const std::optional<interfaces::BlockKey>& block)
+bool CoinStatsIndex::Init()
 {
     if (!m_db->Read(DB_MUHASH, m_muhash)) {
         // Check that the cause of the read failure is that the key does not
@@ -361,9 +352,13 @@ bool CoinStatsIndex::CustomInit(const std::optional<interfaces::BlockKey>& block
         }
     }
 
-    if (block) {
+    if (!BaseIndex::Init()) return false;
+
+    const CBlockIndex* pindex{CurrentIndex()};
+
+    if (pindex) {
         DBVal entry;
-        if (!LookUpOne(*m_db, *block, entry)) {
+        if (!LookUpOne(*m_db, pindex, entry)) {
             return error("%s: Cannot read current %s state; index may be corrupted",
                          __func__, GetName());
         }
@@ -392,12 +387,12 @@ bool CoinStatsIndex::CustomInit(const std::optional<interfaces::BlockKey>& block
     return true;
 }
 
-bool CoinStatsIndex::CustomCommit(CDBBatch& batch)
+bool CoinStatsIndex::CommitInternal(CDBBatch& batch)
 {
     // DB_MUHASH should always be committed in a batch together with DB_BEST_BLOCK
     // to prevent an inconsistent state of the DB.
     batch.Write(DB_MUHASH, m_muhash);
-    return true;
+    return BaseIndex::CommitInternal(batch);
 }
 
 // Reverse a single block as part of a reorg

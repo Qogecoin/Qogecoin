@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,6 +13,9 @@
 #include <univalue.h>
 #include <util/strencodings.h>
 #include <version.h>
+
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <algorithm>
 #include <string>
@@ -63,11 +66,12 @@ CScript ParseScript(const std::string& s)
 {
     CScript result;
 
-    std::vector<std::string> words = SplitString(s, " \t\n");
+    std::vector<std::string> words;
+    boost::algorithm::split(words, s, boost::algorithm::is_any_of(" \t\n"), boost::algorithm::token_compress_on);
 
     for (const std::string& w : words) {
         if (w.empty()) {
-            // Empty string, ignore. (SplitString doesn't combine multiple separators)
+            // Empty string, ignore. (boost::split given '' will return one word)
         } else if (std::all_of(w.begin(), w.end(), ::IsDigit) ||
                    (w.front() == '-' && w.size() > 1 && std::all_of(w.begin() + 1, w.end(), ::IsDigit)))
         {
@@ -265,7 +269,7 @@ int ParseSighashString(const UniValue& sighash)
             {std::string("SINGLE"), int(SIGHASH_SINGLE)},
             {std::string("SINGLE|ANYONECANPAY"), int(SIGHASH_SINGLE|SIGHASH_ANYONECANPAY)},
         };
-        const std::string& strHashType = sighash.get_str();
+        std::string strHashType = sighash.get_str();
         const auto& it = map_sighash_values.find(strHashType);
         if (it != map_sighash_values.end()) {
             hash_type = it->second;

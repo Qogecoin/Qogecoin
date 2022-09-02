@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,9 +13,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <kernel/mempool_limits.h>
-#include <kernel/mempool_options.h>
 
 #include <coins.h>
 #include <consensus/amount.h>
@@ -104,7 +101,7 @@ private:
     const unsigned int entryHeight; //!< Chain height when entering the mempool
     const bool spendsCoinbase;      //!< keep track of transactions that spend a coinbase
     const int64_t sigOpCost;        //!< Total sigop cost
-    CAmount m_modified_fee;         //!< Used for determining the priority of the transaction for mining in a block
+    CAmount feeDelta{0};            //!< Used for determining the priority of the transaction for mining in a block
     LockPoints lockPoints;     //!< Track the height and time at which tx was final
 
     // Information about descendants of this transaction that are in the
@@ -134,7 +131,7 @@ public:
     std::chrono::seconds GetTime() const { return std::chrono::seconds{nTime}; }
     unsigned int GetHeight() const { return entryHeight; }
     int64_t GetSigOpCost() const { return sigOpCost; }
-    CAmount GetModifiedFee() const { return m_modified_fee; }
+    CAmount GetModifiedFee() const { return nFee + feeDelta; }
     size_t DynamicMemoryUsage() const { return nUsageSize; }
     const LockPoints& GetLockPoints() const { return lockPoints; }
 
@@ -142,8 +139,9 @@ public:
     void UpdateDescendantState(int64_t modifySize, CAmount modifyFee, int64_t modifyCount);
     // Adjusts the ancestor state
     void UpdateAncestorState(int64_t modifySize, CAmount modifyFee, int64_t modifyCount, int64_t modifySigOps);
-    // Updates the modified fees with descendants/ancestors.
-    void UpdateModifiedFee(CAmount fee_diff);
+    // Updates the fee delta used for mining priority score, and the
+    // modified fees with descendants/ancestors.
+    void UpdateFeeDelta(CAmount newFeeDelta);
     // Update the LockPoints after a reorg
     void UpdateLockPoints(const LockPoints& lp);
 
@@ -365,7 +363,7 @@ enum class MemPoolRemovalReason {
  * - a transaction which doesn't meet the minimum fee requirements.
  * - a new transaction that double-spends an input of a transaction already in
  * the pool where the new transaction does not meet the Replace-By-Fee
- * requirements as defined in doc/policy/mempool-replacements.md.
+ * requirements as defined in BIP 125.
  * - a non-standard transaction.
  *
  * CTxMemPool::mapTx, and CTxMemPoolEntry bookkeeping:
@@ -451,9 +449,7 @@ protected:
 
     void trackPackageRemoved(const CFeeRate& rate) EXCLUSIVE_LOCKS_REQUIRED(cs);
 
-    bool m_load_tried GUARDED_BY(cs){false};
-
-    CFeeRate GetMinFee(size_t sizelimit) const;
+    bool m_is_loaded GUARDED_BY(cs){false};
 
 public:
 
@@ -564,28 +560,15 @@ public:
     indirectmap<COutPoint, const CTransaction*> mapNextTx GUARDED_BY(cs);
     std::map<uint256, CAmount> mapDeltas GUARDED_BY(cs);
 
-    using Options = kernel::MemPoolOptions;
-
-    const int64_t m_max_size_bytes;
-    const std::chrono::seconds m_expiry;
-    const CFeeRate m_incremental_relay_feerate;
-    const CFeeRate m_min_relay_feerate;
-    const CFeeRate m_dust_relay_feerate;
-    const bool m_permit_bare_multisig;
-    const std::optional<unsigned> m_max_datacarrier_bytes;
-    const bool m_require_standard;
-    const bool m_full_rbf;
-
-    using Limits = kernel::MemPoolLimits;
-
-    const Limits m_limits;
-
     /** Create a new CTxMemPool.
      * Sanity checks will be off by default for performance, because otherwise
      * accepting transactions becomes O(N^2) where N is the number of transactions
      * in the pool.
+     *
+     * @param[in] estimator is used to estimate appropriate transaction fees.
+     * @param[in] check_ratio is the ratio used to determine how often sanity checks will run.
      */
-    explicit CTxMemPool(const Options& opts);
+    explicit CTxMemPool(CBlockPolicyEstimator* estimator = nullptr, int check_ratio = 0);
 
     /**
      * If sanity-checking is turned on, check makes sure the pool is
@@ -665,8 +648,13 @@ public:
      *
      * @param[in] vHashesToUpdate          The set of txids from the
      *     disconnected block that have been accepted back into the mempool.
+     * @param[in] ancestor_size_limit      The maximum allowed size in virtual
+     *     bytes of an entry and its ancestors
+     * @param[in] ancestor_count_limit     The maximum allowed number of
+     *     transactions including the entry and its ancestors.
      */
-    void UpdateTransactionsFromBlock(const std::vector<uint256>& vHashesToUpdate) EXCLUSIVE_LOCKS_REQUIRED(cs, cs_main) LOCKS_EXCLUDED(m_epoch);
+    void UpdateTransactionsFromBlock(const std::vector<uint256>& vHashesToUpdate,
+            uint64_t ancestor_size_limit, uint64_t ancestor_count_limit) EXCLUSIVE_LOCKS_REQUIRED(cs, cs_main) LOCKS_EXCLUDED(m_epoch);
 
     /** Try to calculate all in-mempool ancestors of entry.
      *  (these are all calculated including the tx itself)
@@ -708,14 +696,12 @@ public:
     void CalculateDescendants(txiter it, setEntries& setDescendants) const EXCLUSIVE_LOCKS_REQUIRED(cs);
 
     /** The minimum fee to get into the mempool, which may itself not be enough
-     *  for larger-sized transactions.
-     *  The m_incremental_relay_feerate policy variable is used to bound the time it
-     *  takes the fee rate to go back down all the way to 0. When the feerate
-     *  would otherwise be half of this, it is set to 0 instead.
-     */
-    CFeeRate GetMinFee() const {
-        return GetMinFee(m_max_size_bytes);
-    }
+      *  for larger-sized transactions.
+      *  The incrementalRelayFee policy variable is used to bound the time it
+      *  takes the fee rate to go back down all the way to 0. When the feerate
+      *  would otherwise be half of this, it is set to 0 instead.
+      */
+    CFeeRate GetMinFee(size_t sizelimit) const;
 
     /** Remove transactions from the mempool until its dynamic size is <= sizelimit.
       *  pvNoSpendsRemaining, if set, will be populated with the list of outpoints
@@ -734,17 +720,11 @@ public:
      */
     void GetTransactionAncestry(const uint256& txid, size_t& ancestors, size_t& descendants, size_t* ancestorsize = nullptr, CAmount* ancestorfees = nullptr) const;
 
-    /**
-     * @returns true if we've made an attempt to load the mempool regardless of
-     *          whether the attempt was successful or not
-     */
-    bool GetLoadTried() const;
+    /** @returns true if the mempool is fully loaded */
+    bool IsLoaded() const;
 
-    /**
-     * Set whether or not we've made an attempt to load the mempool (regardless
-     * of whether the attempt was successful or not)
-     */
-    void SetLoadTried(bool load_tried);
+    /** Sets the current loaded state */
+    void SetIsLoaded(bool loaded);
 
     unsigned long size() const
     {
@@ -847,9 +827,14 @@ private:
      * @param[out] descendants_to_remove Populated with the txids of entries that
      *     exceed ancestor limits. It's the responsibility of the caller to
      *     removeRecursive them.
+     * @param[in] ancestor_size_limit the max number of ancestral bytes allowed
+     *     for any descendant
+     * @param[in] ancestor_count_limit the max number of ancestor transactions
+     *     allowed for any descendant
      */
     void UpdateForDescendants(txiter updateIt, cacheMap& cachedDescendants,
-                              const std::set<uint256>& setExclude, std::set<uint256>& descendants_to_remove) EXCLUSIVE_LOCKS_REQUIRED(cs);
+                              const std::set<uint256>& setExclude, std::set<uint256>& descendants_to_remove,
+                              uint64_t ancestor_size_limit, uint64_t ancestor_count_limit) EXCLUSIVE_LOCKS_REQUIRED(cs);
     /** Update ancestors of hash to add/remove it as a descendant transaction. */
     void UpdateAncestorsOf(bool add, txiter hash, setEntries &setAncestors) EXCLUSIVE_LOCKS_REQUIRED(cs);
     /** Set ancestor state for an entry */

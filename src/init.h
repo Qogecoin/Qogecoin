@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -18,9 +18,6 @@ static constexpr bool DEFAULT_DAEMONWAIT = false;
 class ArgsManager;
 namespace interfaces {
 struct BlockAndHeaderTipInfo;
-}
-namespace kernel {
-struct Context;
 }
 namespace node {
 struct NodeContext;
@@ -46,11 +43,11 @@ bool AppInitBasicSetup(const ArgsManager& args);
  */
 bool AppInitParameterInteraction(const ArgsManager& args, bool use_syscall_sandbox = true);
 /**
- * Initialization sanity checks.
+ * Initialization sanity checks: ecc init, sanity checks, dir lock.
  * @note This can be done before daemonization. Do not call Shutdown() if this function fails.
  * @pre Parameters should be parsed and config file should be read, AppInitParameterInteraction should have been called.
  */
-bool AppInitSanityChecks(const kernel::Context& kernel);
+bool AppInitSanityChecks();
 /**
  * Lock qogecoin core data directory.
  * @note This should only be done after daemonization. Do not call Shutdown() if this function fails.

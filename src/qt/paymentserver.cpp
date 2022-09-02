@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,7 +15,7 @@
 #include <chainparams.h>
 #include <interfaces/node.h>
 #include <key_io.h>
-#include <node/interface_ui.h>
+#include <node/ui_interface.h>
 #include <policy/policy.h>
 #include <util/system.h>
 #include <wallet/wallet.h>
@@ -158,7 +158,9 @@ PaymentServer::PaymentServer(QObject* parent, bool startLocalServer) :
     }
 }
 
-PaymentServer::~PaymentServer() = default;
+PaymentServer::~PaymentServer()
+{
+}
 
 //
 // OSX-specific way of handling qogecoin: URIs

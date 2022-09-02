@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -24,6 +24,9 @@
 #include <util/time.h>
 
 #ifdef WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <shellapi.h>
 #include <shlobj.h>
 #include <shlwapi.h>
@@ -53,7 +56,6 @@
 #include <QMouseEvent>
 #include <QPluginLoader>
 #include <QProgressDialog>
-#include <QRegularExpression>
 #include <QScreen>
 #include <QSettings>
 #include <QShortcut>
@@ -72,7 +74,7 @@
 #include <string>
 #include <vector>
 
-#if defined(Q_OS_MACOS)
+#if defined(Q_OS_MAC)
 
 #include <QProcess>
 
@@ -176,7 +178,7 @@ bool parseQogecoinURI(const QUrl &uri, SendCoinsRecipient *out)
         {
             if(!i->second.isEmpty())
             {
-                if (!QogecoinUnits::parse(QogecoinUnit::QOGE, i->second, &rv.amount)) {
+                if (!QogecoinUnits::parse(QogecoinUnit::Qoge, i->second, &rv.amount)) {
                     return false;
                 }
             }
@@ -208,7 +210,7 @@ QString formatQogecoinURI(const SendCoinsRecipient &info)
 
     if (info.amount)
     {
-        ret += QString("?amount=%1").arg(QogecoinUnits::format(QogecoinUnit::QOGE, info.amount, false, QogecoinUnits::SeparatorStyle::NEVER));
+        ret += QString("?amount=%1").arg(QogecoinUnits::format(QogecoinUnit::Qoge, info.amount, false, QogecoinUnits::SeparatorStyle::NEVER));
         paramCount++;
     }
 
@@ -290,17 +292,6 @@ QString getDefaultDataDirectory()
     return PathToQString(GetDefaultDataDir());
 }
 
-QString ExtractFirstSuffixFromFilter(const QString& filter)
-{
-    QRegularExpression filter_re(QStringLiteral(".* \\(\\*\\.(.*)[ \\)]"), QRegularExpression::InvertedGreedinessOption);
-    QString suffix;
-    QRegularExpressionMatch m = filter_re.match(filter);
-    if (m.hasMatch()) {
-        suffix = m.captured(1);
-    }
-    return suffix;
-}
-
 QString getSaveFileName(QWidget *parent, const QString &caption, const QString &dir,
     const QString &filter,
     QString *selectedSuffixOut)
@@ -318,7 +309,13 @@ QString getSaveFileName(QWidget *parent, const QString &caption, const QString &
     /* Directly convert path to native OS path separators */
     QString result = QDir::toNativeSeparators(QFileDialog::getSaveFileName(parent, caption, myDir, filter, &selectedFilter));
 
-    QString selectedSuffix = ExtractFirstSuffixFromFilter(selectedFilter);
+    /* Extract first suffix from filter pattern "Description (*.foo)" or "Description (*.foo *.bar ...) */
+    QRegExp filter_re(".* \\(\\*\\.(.*)[ \\)]");
+    QString selectedSuffix;
+    if(filter_re.exactMatch(selectedFilter))
+    {
+        selectedSuffix = filter_re.cap(1);
+    }
 
     /* Add suffix if needed */
     QFileInfo info(result);
@@ -360,8 +357,14 @@ QString getOpenFileName(QWidget *parent, const QString &caption, const QString &
 
     if(selectedSuffixOut)
     {
-        *selectedSuffixOut = ExtractFirstSuffixFromFilter(selectedFilter);
-        ;
+        /* Extract first suffix from filter pattern "Description (*.foo)" or "Description (*.foo *.bar ...) */
+        QRegExp filter_re(".* \\(\\*\\.(.*)[ \\)]");
+        QString selectedSuffix;
+        if(filter_re.exactMatch(selectedFilter))
+        {
+            selectedSuffix = filter_re.cap(1);
+        }
+        *selectedSuffixOut = selectedSuffix;
     }
     return result;
 }
@@ -396,7 +399,7 @@ bool isObscured(QWidget *w)
 
 void bringToFront(QWidget* w)
 {
-#ifdef Q_OS_MACOS
+#ifdef Q_OS_MAC
     ForceActivation();
 #endif
 
@@ -428,7 +431,7 @@ void openDebugLogfile()
 
 bool openQogecoinConf()
 {
-    fs::path pathConfig = GetConfigFile(gArgs.GetPathArg("-conf", QOGECOIN_CONF_FILENAME));
+    fs::path pathConfig = GetConfigFile(gArgs.GetArg("-conf", QOGECOIN_CONF_FILENAME));
 
     /* Create the file */
     std::ofstream configFile{pathConfig, std::ios_base::app};
@@ -440,7 +443,7 @@ bool openQogecoinConf()
 
     /* Open qogecoin.conf with the associated application */
     bool res = QDesktopServices::openUrl(QUrl::fromLocalFile(PathToQString(pathConfig)));
-#ifdef Q_OS_MACOS
+#ifdef Q_OS_MAC
     // Workaround for macOS-specific behavior; see #15409.
     if (!res) {
         res = QProcess::startDetached("/usr/bin/open", QStringList{"-t", PathToQString(pathConfig)});
@@ -879,7 +882,7 @@ bool ItemDelegate::eventFilter(QObject *object, QEvent *event)
 
 void PolishProgressDialog(QProgressDialog* dialog)
 {
-#ifdef Q_OS_MACOS
+#ifdef Q_OS_MAC
     // Workaround for macOS-only Qt bug; see: QTBUG-65750, QTBUG-70357.
     const int margin = TextWidth(dialog->fontMetrics(), ("X"));
     dialog->resize(dialog->width() + 2 * margin, dialog->height());

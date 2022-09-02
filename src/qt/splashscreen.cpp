@@ -1,4 +1,4 @@
-// Copyright (c) 2021-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2021-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -44,7 +44,7 @@ SplashScreen::SplashScreen(const NetworkStyle* networkStyle)
     QString titleText       = PACKAGE_NAME;
     QString versionText     = QString("Version %1").arg(QString::fromStdString(FormatFullVersion()));
     QString copyrightText   = QString::fromUtf8(CopyrightHolders(strprintf("\xc2\xA9 %u-%u ", 2009, COPYRIGHT_YEAR)).c_str());
-    const QString& titleAddText    = networkStyle->getTitleAddText();
+    QString titleAddText    = networkStyle->getTitleAddText();
 
     QString font            = QApplication::font().toString();
 

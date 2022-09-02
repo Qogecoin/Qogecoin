@@ -1,4 +1,4 @@
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -26,7 +26,7 @@ FUZZ_TARGET_INIT(parse_univalue, initialize_parse_univalue)
             return ParseNonRFCJSONValue(random_string);
         } catch (const std::runtime_error&) {
             valid = false;
-            return UniValue{};
+            return NullUniValue;
         }
     }();
     if (!valid) {

@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -138,6 +138,8 @@ FUZZ_TARGET_INIT(key, initialize_key)
         assert(tx_multisig_script.size() == 37);
 
         FillableSigningProvider fillable_signing_provider;
+        assert(IsSolvable(fillable_signing_provider, tx_pubkey_script));
+        assert(IsSolvable(fillable_signing_provider, tx_multisig_script));
         assert(!IsSegWitOutput(fillable_signing_provider, tx_pubkey_script));
         assert(!IsSegWitOutput(fillable_signing_provider, tx_multisig_script));
         assert(fillable_signing_provider.GetKeys().size() == 0);
@@ -155,12 +157,12 @@ FUZZ_TARGET_INIT(key, initialize_key)
         assert(fillable_signing_provider_pub.HaveKey(pubkey.GetID()));
 
         TxoutType which_type_tx_pubkey;
-        const bool is_standard_tx_pubkey = IsStandard(tx_pubkey_script, std::nullopt, which_type_tx_pubkey);
+        const bool is_standard_tx_pubkey = IsStandard(tx_pubkey_script, which_type_tx_pubkey);
         assert(is_standard_tx_pubkey);
         assert(which_type_tx_pubkey == TxoutType::PUBKEY);
 
         TxoutType which_type_tx_multisig;
-        const bool is_standard_tx_multisig = IsStandard(tx_multisig_script, std::nullopt, which_type_tx_multisig);
+        const bool is_standard_tx_multisig = IsStandard(tx_multisig_script, which_type_tx_multisig);
         assert(is_standard_tx_multisig);
         assert(which_type_tx_multisig == TxoutType::MULTISIG);
 

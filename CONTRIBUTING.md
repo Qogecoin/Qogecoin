@@ -10,9 +10,10 @@ First, in terms of structure, there is no particular concept of "Qogecoin Core
 developers" in the sense of privileged people. Open source often naturally
 revolves around a meritocracy where contributors earn trust from the developer
 community over time. Nevertheless, some hierarchy is necessary for practical
-purposes. As such, there are repository maintainers who are responsible for
-merging pull requests, the [release cycle](/doc/release-process.md), and
-moderation.
+purposes. As such, there are repository "maintainers" who are responsible for
+merging pull requests, as well as a "lead maintainer" who is responsible for the
+[release cycle](/doc/release-process.md) as well as overall merging, moderation
+and appointment of maintainers.
 
 Getting Started
 ---------------
@@ -216,9 +217,9 @@ Please update the resulting commit message, if needed. It should read as a
 coherent message. In most cases, this means not just listing the interim
 commits.
 
-If your change contains a merge commit, the above workflow may not work and you
-will need to remove the merge commit first. See the next section for details on
-how to rebase.
+If you have problems with squashing or other git workflows, you can enable
+"Allow edits from maintainers" in the right-hand sidebar of the GitHub web
+interface and ask for help in the pull request.
 
 Please refrain from creating several pull requests for the same change.
 Use the pull request that is already open (or was created earlier) to amend
@@ -231,9 +232,7 @@ pull request to pull request.
 ### Rebasing Changes
 
 When a pull request conflicts with the target branch, you may be asked to rebase it on top of the current target branch.
-
-    git fetch https://github.com/qogecoin/qogecoin  # Fetch the latest upstream commit
-    git rebase FETCH_HEAD  # Rebuild commits on top of the new base
+The `git rebase` command will take care of rebuilding your commits on top of the new base.
 
 This project aims to have a clean git history, where code changes are only made in non-merge commits. This simplifies
 auditability because merge commits can be assumed to not contain arbitrary code changes. Merge commits should be signed,
@@ -294,7 +293,7 @@ projects such as libsecp256k1), and is not to be confused with overall Qogecoin
 Network Protocol consensus changes.
 
 Whether a pull request is merged into Qogecoin Core rests with the project merge
-maintainers.
+maintainers and ultimately the project lead.
 
 Maintainers will take into consideration if a patch is in line with the general
 principles of the project; meets the minimum standards for inclusion; and will

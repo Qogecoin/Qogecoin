@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,14 +9,14 @@
 #include <timedata.h>
 
 #include <netaddress.h>
-#include <node/interface_ui.h>
+#include <node/ui_interface.h>
 #include <sync.h>
 #include <tinyformat.h>
 #include <util/system.h>
 #include <util/translation.h>
 #include <warnings.h>
 
-static GlobalMutex g_timeoffset_mutex;
+static Mutex g_timeoffset_mutex;
 static int64_t nTimeOffset GUARDED_BY(g_timeoffset_mutex) = 0;
 
 /**
@@ -32,9 +32,9 @@ int64_t GetTimeOffset()
     return nTimeOffset;
 }
 
-NodeClock::time_point GetAdjustedTime()
+int64_t GetAdjustedTime()
 {
-    return NodeClock::now() + std::chrono::seconds{GetTimeOffset()};
+    return GetTime() + GetTimeOffset();
 }
 
 #define QOGECOIN_TIMEDATA_MAX_SAMPLES 200
@@ -99,7 +99,7 @@ void AddTimeData(const CNetAddr& ip, int64_t nOffsetSample)
             }
         }
 
-        if (LogAcceptCategory(BCLog::NET, BCLog::Level::Debug)) {
+        if (LogAcceptCategory(BCLog::NET)) {
             std::string log_message{"time data samples: "};
             for (const int64_t n : vSorted) {
                 log_message += strprintf("%+d  ", n);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test indices in conjunction with prune."""
@@ -8,6 +8,7 @@ from test_framework.util import (
     assert_equal,
     assert_greater_than,
     assert_raises_rpc_error,
+    p2p_port,
 )
 
 
@@ -73,7 +74,7 @@ class FeatureIndexPruneTest(QogecoinTestFramework):
                 pruneheight_new = node.pruneblockchain(400)
                 # the prune heights used here and below are magic numbers that are determined by the
                 # thresholds at which block files wrap, so they depend on disk serialization and default block file size.
-                assert_equal(pruneheight_new, 248)
+                assert_equal(pruneheight_new, 249)
 
         self.log.info("check if we can access the tips blockfilter and coinstats when we have pruned some blocks")
         tip = self.nodes[0].getbestblockhash()
@@ -108,7 +109,7 @@ class FeatureIndexPruneTest(QogecoinTestFramework):
         self.log.info("prune exactly up to the indices best blocks while the indices are disabled")
         for i in range(3):
             pruneheight_2 = self.nodes[i].pruneblockchain(1000)
-            assert_equal(pruneheight_2, 750)
+            assert_equal(pruneheight_2, 751)
             # Restart the nodes again with the indices activated
             self.restart_node(i, extra_args=self.extra_args[i])
 
@@ -131,18 +132,18 @@ class FeatureIndexPruneTest(QogecoinTestFramework):
             self.nodes[i].assert_start_raises_init_error(extra_args=self.extra_args[i], expected_msg=msg)
 
         self.log.info("make sure the nodes start again with the indices and an additional -reindex arg")
+        ip_port = "127.0.0.1:" + str(p2p_port(3))
         for i in range(3):
-            restart_args = self.extra_args[i]+["-reindex"]
-            self.restart_node(i, extra_args=restart_args)
             # The nodes need to be reconnected to the non-pruning node upon restart, otherwise they will be stuck
-            self.connect_nodes(i, 3)
+            restart_args = self.extra_args[i]+["-reindex", f"-connect={ip_port}"]
+            self.restart_node(i, extra_args=restart_args)
 
         self.sync_blocks(timeout=300)
 
         for node in self.nodes[:2]:
             with node.assert_debug_log(['limited pruning to height 2489']):
                 pruneheight_new = node.pruneblockchain(2500)
-                assert_equal(pruneheight_new, 2005)
+                assert_equal(pruneheight_new, 2006)
 
         self.log.info("ensure that prune locks don't prevent indices from failing in a reorg scenario")
         with self.nodes[0].assert_debug_log(['basic block filter index prune lock moved back to 2480']):

@@ -1,4 +1,4 @@
-// Copyright (c) 2018-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2018-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,7 +28,7 @@ bool ExternalSigner::Enumerate(const std::string& command, std::vector<ExternalS
     if (!result.isArray()) {
         throw std::runtime_error(strprintf("'%s' received invalid response, expected array of signers", command));
     }
-    for (const UniValue& signer : result.getValues()) {
+    for (UniValue signer : result.getValues()) {
         // Check for error
         const UniValue& error = find_value(signer, "error");
         if (!error.isNull()) {
@@ -49,7 +49,7 @@ bool ExternalSigner::Enumerate(const std::string& command, std::vector<ExternalS
             if (signer.m_fingerprint.compare(fingerprintStr) == 0) duplicate = true;
         }
         if (duplicate) break;
-        std::string name;
+        std::string name = "";
         const UniValue& model_field = find_value(signer, "model");
         if (model_field.isStr() && model_field.getValStr() != "") {
             name += model_field.getValStr();
@@ -74,12 +74,11 @@ bool ExternalSigner::SignTransaction(PartiallySignedTransaction& psbtx, std::str
     // Serialize the PSBT
     CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
     ssTx << psbtx;
-    // parse ExternalSigner master fingerprint
-    std::vector<unsigned char> parsed_m_fingerprint = ParseHex(m_fingerprint);
+
     // Check if signer fingerprint matches any input master key fingerprint
     auto matches_signer_fingerprint = [&](const PSBTInput& input) {
         for (const auto& entry : input.hd_keypaths) {
-            if (parsed_m_fingerprint == MakeUCharSpan(entry.second.fingerprint)) return true;
+            if (m_fingerprint == strprintf("%08x", ReadBE32(entry.second.fingerprint))) return true;
         }
         return false;
     };

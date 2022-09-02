@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -153,7 +153,7 @@ static const unsigned char ParseHex_expected[65] = {
     0xde, 0x5c, 0x38, 0x4d, 0xf7, 0xba, 0x0b, 0x8d, 0x57, 0x8a, 0x4c, 0x70, 0x2b, 0x6b, 0xf1, 0x1d,
     0x5f
 };
-BOOST_AUTO_TEST_CASE(parse_hex)
+BOOST_AUTO_TEST_CASE(util_ParseHex)
 {
     std::vector<unsigned char> result;
     std::vector<unsigned char> expected(ParseHex_expected, ParseHex_expected + sizeof(ParseHex_expected));
@@ -168,14 +168,6 @@ BOOST_AUTO_TEST_CASE(parse_hex)
     // Leading space must be supported (used in BerkeleyEnvironment::Salvage)
     result = ParseHex(" 89 34 56 78");
     BOOST_CHECK(result.size() == 4 && result[0] == 0x89 && result[1] == 0x34 && result[2] == 0x56 && result[3] == 0x78);
-
-    // Embedded null is treated as end
-    const std::string with_embedded_null{" 11 "s
-                                         " \0 "
-                                         " 22 "s};
-    BOOST_CHECK_EQUAL(with_embedded_null.size(), 11);
-    result = ParseHex(with_embedded_null);
-    BOOST_CHECK(result.size() == 1 && result[0] == 0x11);
 
     // Stop parsing at invalid value
     result = ParseHex("1234 invalid 1234");
@@ -206,24 +198,6 @@ BOOST_AUTO_TEST_CASE(util_HexStr)
         BOOST_CHECK_EQUAL(HexStr(in_s), out_exp);
         BOOST_CHECK_EQUAL(HexStr(in_b), out_exp);
     }
-
-    {
-        auto input = std::string();
-        for (size_t i=0; i<256; ++i) {
-            input.push_back(static_cast<char>(i));
-        }
-
-        auto hex = HexStr(input);
-        BOOST_TEST_REQUIRE(hex.size() == 512);
-        static constexpr auto hexmap = std::string_view("0123456789abcdef");
-        for (size_t i = 0; i < 256; ++i) {
-            auto upper = hexmap.find(hex[i * 2]);
-            auto lower = hexmap.find(hex[i * 2 + 1]);
-            BOOST_TEST_REQUIRE(upper != std::string_view::npos);
-            BOOST_TEST_REQUIRE(lower != std::string_view::npos);
-            BOOST_TEST_REQUIRE(i == upper*16 + lower);
-        }
-    }
 }
 
 BOOST_AUTO_TEST_CASE(span_write_bytes)
@@ -247,22 +221,6 @@ BOOST_AUTO_TEST_CASE(util_Join)
     BOOST_CHECK_EQUAL(Join<std::string>({}, ", ", op_upper), "");
     BOOST_CHECK_EQUAL(Join<std::string>({"foo"}, ", ", op_upper), "FOO");
     BOOST_CHECK_EQUAL(Join<std::string>({"foo", "bar"}, ", ", op_upper), "FOO, BAR");
-}
-
-BOOST_AUTO_TEST_CASE(util_ReplaceAll)
-{
-    const std::string original("A test \"%s\" string '%s'.");
-    auto test_replaceall = [&original](const std::string& search, const std::string& substitute, const std::string& expected) {
-        auto test = original;
-        ReplaceAll(test, search, substitute);
-        BOOST_CHECK_EQUAL(test, expected);
-    };
-
-    test_replaceall("", "foo", original);
-    test_replaceall(original, "foo", "foo");
-    test_replaceall("%s", "foo", "A test \"foo\" string 'foo'.");
-    test_replaceall("\"", "foo", "A test foo%sfoo string '%s'.");
-    test_replaceall("'", "foo", "A test \"%s\" string foo%sfoo.");
 }
 
 BOOST_AUTO_TEST_CASE(util_TrimString)
@@ -289,6 +247,9 @@ BOOST_AUTO_TEST_CASE(util_FormatParseISO8601DateTime)
     BOOST_CHECK_EQUAL(ParseISO8601DateTime("1970-01-01T00:00:00Z"), 0);
     BOOST_CHECK_EQUAL(ParseISO8601DateTime("1960-01-01T00:00:00Z"), 0);
     BOOST_CHECK_EQUAL(ParseISO8601DateTime("2011-09-30T23:36:17Z"), 1317425777);
+
+    auto time = GetTimeSeconds();
+    BOOST_CHECK_EQUAL(ParseISO8601DateTime(FormatISO8601DateTime(time)), time);
 }
 
 BOOST_AUTO_TEST_CASE(util_FormatISO8601Date)
@@ -1509,27 +1470,19 @@ BOOST_AUTO_TEST_CASE(util_time_GetTime)
 {
     SetMockTime(111);
     // Check that mock time does not change after a sleep
-    for (const auto& num_sleep : {0ms, 1ms}) {
-        UninterruptibleSleep(num_sleep);
+    for (const auto& num_sleep : {0, 1}) {
+        UninterruptibleSleep(std::chrono::milliseconds{num_sleep});
         BOOST_CHECK_EQUAL(111, GetTime()); // Deprecated time getter
-        BOOST_CHECK_EQUAL(111, Now<NodeSeconds>().time_since_epoch().count());
-        BOOST_CHECK_EQUAL(111, TicksSinceEpoch<std::chrono::seconds>(NodeClock::now()));
-        BOOST_CHECK_EQUAL(111, TicksSinceEpoch<SecondsDouble>(Now<NodeSeconds>()));
         BOOST_CHECK_EQUAL(111, GetTime<std::chrono::seconds>().count());
         BOOST_CHECK_EQUAL(111000, GetTime<std::chrono::milliseconds>().count());
-        BOOST_CHECK_EQUAL(111000, TicksSinceEpoch<std::chrono::milliseconds>(NodeClock::now()));
         BOOST_CHECK_EQUAL(111000000, GetTime<std::chrono::microseconds>().count());
     }
 
     SetMockTime(0);
-    // Check that steady time and system time changes after a sleep
-    const auto steady_ms_0 = Now<SteadyMilliseconds>();
-    const auto steady_0 = std::chrono::steady_clock::now();
+    // Check that system time changes after a sleep
     const auto ms_0 = GetTime<std::chrono::milliseconds>();
     const auto us_0 = GetTime<std::chrono::microseconds>();
-    UninterruptibleSleep(1ms);
-    BOOST_CHECK(steady_ms_0 < Now<SteadyMilliseconds>());
-    BOOST_CHECK(steady_0 + 1ms <= std::chrono::steady_clock::now());
+    UninterruptibleSleep(std::chrono::milliseconds{1});
     BOOST_CHECK(ms_0 < GetTime<std::chrono::milliseconds>());
     BOOST_CHECK(us_0 < GetTime<std::chrono::microseconds>());
 }
@@ -2443,19 +2396,6 @@ BOOST_AUTO_TEST_CASE(test_SplitString)
         BOOST_CHECK_EQUAL(result.size(), 1);
         BOOST_CHECK_EQUAL(result[0], "AAA");
     }
-
-    // multiple split characters
-    {
-        using V = std::vector<std::string>;
-        BOOST_TEST(SplitString("a,b.c:d;e", ",;") == V({"a", "b.c:d", "e"}));
-        BOOST_TEST(SplitString("a,b.c:d;e", ",;:.") == V({"a", "b", "c", "d", "e"}));
-        BOOST_TEST(SplitString("a,b.c:d;e", "") == V({"a,b.c:d;e"}));
-        BOOST_TEST(SplitString("aaa", "bcdefg") == V({"aaa"}));
-        BOOST_TEST(SplitString("x\0a,b"s, "\0"s) == V({"x", "a,b"}));
-        BOOST_TEST(SplitString("x\0a,b"s, '\0') == V({"x", "a,b"}));
-        BOOST_TEST(SplitString("x\0a,b"s, "\0,"s) == V({"x", "a", "b"}));
-        BOOST_TEST(SplitString("abcdefg", "bcd") == V({"a", "", "", "efg"}));
-    }
 }
 
 BOOST_AUTO_TEST_CASE(test_LogEscapeMessage)
@@ -2478,9 +2418,9 @@ struct Tracker
     //! Points to the original object (possibly itself) we moved/copied from
     const Tracker* origin;
     //! How many copies where involved between the original object and this one (moves are not counted)
-    int copies{0};
+    int copies;
 
-    Tracker() noexcept : origin(this) {}
+    Tracker() noexcept : origin(this), copies(0) {}
     Tracker(const Tracker& t) noexcept : origin(t.origin), copies(t.copies + 1) {}
     Tracker(Tracker&& t) noexcept : origin(t.origin), copies(t.copies) {}
     Tracker& operator=(const Tracker& t) noexcept

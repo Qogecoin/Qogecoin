@@ -1,15 +1,10 @@
-// Copyright (c) 2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <kernel/mempool_persist.h>
-
 #include <chainparamsbase.h>
-#include <node/mempool_args.h>
-#include <node/mempool_persist_args.h>
 #include <test/fuzz/FuzzedDataProvider.h>
 #include <test/fuzz/fuzz.h>
-#include <test/fuzz/mempool_utils.h>
 #include <test/fuzz/util.h>
 #include <test/util/setup_common.h>
 #include <txmempool.h>
@@ -18,10 +13,6 @@
 
 #include <cstdint>
 #include <vector>
-
-using kernel::DumpMempool;
-
-using node::MempoolPath;
 
 namespace {
 const TestingSetup* g_setup;
@@ -39,14 +30,10 @@ FUZZ_TARGET_INIT(validation_load_mempool, initialize_validation_load_mempool)
     SetMockTime(ConsumeTime(fuzzed_data_provider));
     FuzzedFileProvider fuzzed_file_provider = ConsumeFile(fuzzed_data_provider);
 
-    CTxMemPool pool{MemPoolOptionsForTest(g_setup->m_node)};
-
-    auto& chainstate{static_cast<DummyChainState&>(g_setup->m_node.chainman->ActiveChainstate())};
-    chainstate.SetMempool(&pool);
-
+    CTxMemPool pool{};
     auto fuzzed_fopen = [&](const fs::path&, const char*) {
         return fuzzed_file_provider.open();
     };
-    (void)chainstate.LoadMempool(MempoolPath(g_setup->m_args), fuzzed_fopen);
-    (void)DumpMempool(pool, MempoolPath(g_setup->m_args), fuzzed_fopen, true);
+    (void)LoadMempool(pool, g_setup->m_node.chainman->ActiveChainstate(), fuzzed_fopen);
+    (void)DumpMempool(pool, fuzzed_fopen, true);
 }

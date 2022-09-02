@@ -1,12 +1,12 @@
 // Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <noui.h>
 
 #include <logging.h>
-#include <node/interface_ui.h>
+#include <node/ui_interface.h>
 #include <util/translation.h>
 
 #include <string>

@@ -64,7 +64,6 @@ The Qogecoin repo's [root README](/README.md) contains relevant information on t
 - [BIPS](bips.md)
 - [Dnsseed Policy](dnsseed-policy.md)
 - [Benchmarking](benchmarking.md)
-- [Internal Design Docs](design/)
 
 ### Resources
 * Discuss on the [QogecoinTalk](https://qogecointalk.org/) forums, in the [Development & Technical Discussion board](https://qogecointalk.org/index.php?board=6.0).
@@ -72,6 +71,7 @@ The Qogecoin repo's [root README](/README.md) contains relevant information on t
 
 ### Miscellaneous
 - [Assets Attribution](assets-attribution.md)
+- [Assumeutxo design](assumeutxo.md)
 - [qogecoin.conf Configuration File](qogecoin-conf.md)
 - [CJDNS Support](cjdns.md)
 - [Files](files.md)

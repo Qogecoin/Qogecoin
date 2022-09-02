@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2018-2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -22,6 +22,7 @@ EXCLUDE_FILES_WITH_PREFIX = ['src/crypto/ctaes',
                              'src/crc32c',
                              'src/secp256k1',
                              'src/minisketch',
+                             'src/univalue',
                              'src/tinyformat.h',
                              'src/bench/nanobench.h',
                              'src/test/fuzz/FuzzedDataProvider.h']

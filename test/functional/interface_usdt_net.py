@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -109,7 +109,7 @@ class NetTracepointTest(QogecoinTestFramework):
 
         self.log.info(
             "hook into the net:inbound_message and net:outbound_message tracepoints")
-        ctx = USDT(pid=self.nodes[0].process.pid)
+        ctx = USDT(path=str(self.options.qogecoind))
         ctx.enable_probe(probe="net:inbound_message",
                          fn_name="trace_inbound_message")
         ctx.enable_probe(probe="net:outbound_message",

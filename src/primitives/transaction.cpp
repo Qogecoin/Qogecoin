@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,15 +7,10 @@
 
 #include <consensus/amount.h>
 #include <hash.h>
-#include <script/script.h>
-#include <serialize.h>
 #include <tinyformat.h>
-#include <uint256.h>
 #include <util/strencodings.h>
-#include <version.h>
 
-#include <cassert>
-#include <stdexcept>
+#include <assert.h>
 
 std::string COutPoint::ToString() const
 {

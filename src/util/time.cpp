@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,20 +7,17 @@
 #include <config/qogecoin-config.h>
 #endif
 
-#include <compat/compat.h>
-#include <tinyformat.h>
+#include <compat.h>
 #include <util/time.h>
+
 #include <util/check.h>
 
-#include <boost/date_time/posix_time/posix_time.hpp>
-
 #include <atomic>
-#include <chrono>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <ctime>
-#include <locale>
 #include <thread>
-#include <sstream>
-#include <string>
+
+#include <tinyformat.h>
 
 void UninterruptibleSleep(const std::chrono::microseconds& n) { std::this_thread::sleep_for(n); }
 
@@ -69,16 +66,20 @@ bool ChronoSanityCheck()
     return true;
 }
 
-NodeClock::time_point NodeClock::now() noexcept
+template <typename T>
+T GetTime()
 {
     const std::chrono::seconds mocktime{nMockTime.load(std::memory_order_relaxed)};
     const auto ret{
         mocktime.count() ?
             mocktime :
-            std::chrono::system_clock::now().time_since_epoch()};
+            std::chrono::duration_cast<T>(std::chrono::system_clock::now().time_since_epoch())};
     assert(ret > 0s);
-    return time_point{ret};
-};
+    return ret;
+}
+template std::chrono::seconds GetTime();
+template std::chrono::milliseconds GetTime();
+template std::chrono::microseconds GetTime();
 
 template <typename T>
 static T GetSystemTime()
@@ -112,6 +113,11 @@ int64_t GetTimeMillis()
 int64_t GetTimeMicros()
 {
     return int64_t{GetSystemTime<std::chrono::microseconds>().count()};
+}
+
+int64_t GetTimeSeconds()
+{
+    return int64_t{GetSystemTime<std::chrono::seconds>().count()};
 }
 
 int64_t GetTime() { return GetTime<std::chrono::seconds>().count(); }

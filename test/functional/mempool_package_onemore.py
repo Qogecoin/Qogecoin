@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test descendant package tracking carve-out allowing one final transaction in
@@ -7,9 +7,6 @@
    size.
 """
 
-from test_framework.messages import (
-    DEFAULT_ANCESTOR_LIMIT,
-)
 from test_framework.test_framework import QogecoinTestFramework
 from test_framework.util import (
     assert_equal,
@@ -17,6 +14,9 @@ from test_framework.util import (
 )
 from test_framework.wallet import MiniWallet
 
+
+MAX_ANCESTORS = 25
+MAX_DESCENDANTS = 25
 
 
 class MempoolPackagesTest(QogecoinTestFramework):
@@ -34,19 +34,19 @@ class MempoolPackagesTest(QogecoinTestFramework):
         self.wallet = MiniWallet(self.nodes[0])
         self.wallet.rescan_utxos()
 
-        # DEFAULT_ANCESTOR_LIMIT transactions off a confirmed tx should be fine
+        # MAX_ANCESTORS transactions off a confirmed tx should be fine
         chain = []
         utxo = self.wallet.get_utxo()
         for _ in range(4):
             utxo, utxo2 = self.chain_tx([utxo], num_outputs=2)
             chain.append(utxo2)
-        for _ in range(DEFAULT_ANCESTOR_LIMIT - 4):
+        for _ in range(MAX_ANCESTORS - 4):
             utxo, = self.chain_tx([utxo])
             chain.append(utxo)
         second_chain, = self.chain_tx([self.wallet.get_utxo()])
 
-        # Check mempool has DEFAULT_ANCESTOR_LIMIT + 1 transactions in it
-        assert_equal(len(self.nodes[0].getrawmempool()), DEFAULT_ANCESTOR_LIMIT + 1)
+        # Check mempool has MAX_ANCESTORS + 1 transactions in it
+        assert_equal(len(self.nodes[0].getrawmempool()), MAX_ANCESTORS + 1)
 
         # Adding one more transaction on to the chain should fail.
         assert_raises_rpc_error(-26, "too-long-mempool-chain, too many unconfirmed ancestors [limit: 25]", self.chain_tx, [utxo])
@@ -67,7 +67,7 @@ class MempoolPackagesTest(QogecoinTestFramework):
         self.nodes[0].sendrawtransaction(replacable_tx.serialize().hex())
 
         # Finally, check that we added two transactions
-        assert_equal(len(self.nodes[0].getrawmempool()), DEFAULT_ANCESTOR_LIMIT + 3)
+        assert_equal(len(self.nodes[0].getrawmempool()), MAX_ANCESTORS + 3)
 
 
 if __name__ == '__main__':

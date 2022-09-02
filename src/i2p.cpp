@@ -1,9 +1,9 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chainparams.h>
-#include <compat/compat.h>
+#include <compat.h>
 #include <compat/endian.h>
 #include <crypto/sha256.h>
 #include <fs.h>
@@ -150,8 +150,8 @@ bool Session::Accept(Connection& conn)
                 throw std::runtime_error("wait on socket failed");
             }
 
-            if (occurred == 0) {
-                // Timeout, no incoming connections or errors within MAX_WAIT_FOR_IO.
+            if ((occurred & Sock::RECV) == 0) {
+                // Timeout, no incoming connections within MAX_WAIT_FOR_IO.
                 continue;
             }
 
@@ -242,7 +242,7 @@ std::string Session::Reply::Get(const std::string& key) const
 template <typename... Args>
 void Session::Log(const std::string& fmt, const Args&... args) const
 {
-    LogPrint(BCLog::I2P, "%s\n", tfm::format(fmt, args...));
+    LogPrint(BCLog::I2P, "I2P: %s\n", tfm::format(fmt, args...));
 }
 
 Session::Reply Session::SendRequestAndGetReply(const Sock& sock,
@@ -376,8 +376,8 @@ void Session::CreateIfNotCreatedAlready()
     m_session_id = session_id;
     m_control_sock = std::move(sock);
 
-    LogPrintfCategory(BCLog::I2P, "SAM session created: session id=%s, my address=%s\n",
-                      m_session_id, m_my_addr.ToString());
+    LogPrintf("I2P: SAM session created: session id=%s, my address=%s\n", m_session_id,
+              m_my_addr.ToString());
 }
 
 std::unique_ptr<Sock> Session::StreamAccept()
@@ -410,7 +410,7 @@ void Session::Disconnect()
             Log("Destroying session %s", m_session_id);
         }
     }
-    m_control_sock = std::make_unique<Sock>(INVALID_SOCKET);
+    m_control_sock->Reset();
     m_session_id.clear();
 }
 } // namespace sam

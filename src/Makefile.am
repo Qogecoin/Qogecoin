@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2013-2016 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,12 +23,13 @@ noinst_PROGRAMS =
 TESTS =
 BENCHMARKS =
 
-QOGECOIN_INCLUDES=-I$(builddir) -I$(srcdir)/$(MINISKETCH_INCLUDE_DIR_INT) -I$(srcdir)/secp256k1/include -I$(srcdir)/$(UNIVALUE_INCLUDE_DIR_INT) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS)
+QOGECOIN_INCLUDES=-I$(builddir) -I$(srcdir)/$(MINISKETCH_INCLUDE_DIR_INT) -I$(srcdir)/secp256k1/include -I$(srcdir)/$(UNIVALUE_INCLUDE_DIR_INT) $(BDB_CPPFLAGS) $(BOOST_CPPFLAGS) $(LEVELDB_CPPFLAGS)
 
 LIBQOGECOIN_NODE=libqogecoin_node.a
 LIBQOGECOIN_COMMON=libqogecoin_common.a
 LIBQOGECOIN_CONSENSUS=libqogecoin_consensus.a
 LIBQOGECOIN_CLI=libqogecoin_cli.a
+LIBQOGECOIN_KERNEL=libqogecoin_kernel.a
 LIBQOGECOIN_UTIL=libqogecoin_util.a
 LIBQOGECOIN_CRYPTO_BASE=crypto/libqogecoin_crypto_base.la
 LIBQOGECOINQT=qt/libqogecoinqt.a
@@ -133,11 +134,12 @@ QOGECOIN_CORE_H = \
   clientversion.h \
   coins.h \
   common/bloom.h \
+  compat.h \
   compat/assumptions.h \
   compat/byteswap.h \
-  compat/compat.h \
   compat/cpuid.h \
   compat/endian.h \
+  compat/sanity.h \
   compressor.h \
   consensus/consensus.h \
   consensus/tx_check.h \
@@ -169,15 +171,6 @@ QOGECOIN_CORE_H = \
   interfaces/ipc.h \
   interfaces/node.h \
   interfaces/wallet.h \
-  kernel/chain.h \
-  kernel/chainstatemanager_opts.h \
-  kernel/checks.h \
-  kernel/coinstats.h \
-  kernel/context.h \
-  kernel/mempool_limits.h \
-  kernel/mempool_options.h \
-  kernel/mempool_persist.h \
-  kernel/validation_cache_sizes.h \
   key.h \
   key_io.h \
   logging.h \
@@ -197,23 +190,18 @@ QOGECOIN_CORE_H = \
   node/caches.h \
   node/chainstate.h \
   node/coin.h \
-  node/connection_types.h \
+  node/coinstats.h \
   node/context.h \
-  node/eviction.h \
-  node/interface_ui.h \
-  node/mempool_args.h \
-  node/mempool_persist_args.h \
   node/miner.h \
   node/minisketchwrapper.h \
   node/psbt.h \
   node/transaction.h \
+  node/ui_interface.h \
   node/utxo_snapshot.h \
-  node/validation_cache_args.h \
   noui.h \
   outputtype.h \
   policy/feerate.h \
   policy/fees.h \
-  policy/fees_args.h \
   policy/packages.h \
   policy/policy.h \
   policy/rbf.h \
@@ -281,14 +269,12 @@ QOGECOIN_CORE_H = \
   util/overloaded.h \
   util/rbf.h \
   util/readwritefile.h \
-  util/result.h \
   util/serfloat.h \
   util/settings.h \
   util/sock.h \
   util/spanparsing.h \
   util/string.h \
   util/syscall_sandbox.h \
-  util/syserror.h \
   util/system.h \
   util/thread.h \
   util/threadnames.h \
@@ -342,6 +328,7 @@ obj/build.h: FORCE
 	  "$(abs_top_srcdir)"
 libqogecoin_util_a-clientversion.$(OBJEXT): obj/build.h
 
+ipc/capnp/libqogecoin_ipc_a-ipc.$(OBJEXT): $(libqogecoin_ipc_mpgen_input:=.h)
 
 # server: shared between qogecoind and qogecoin-qt
 # Contains code accessing mempool and chain state that is meant to be separated
@@ -368,34 +355,24 @@ libqogecoin_node_a_SOURCES = \
   index/coinstatsindex.cpp \
   index/txindex.cpp \
   init.cpp \
-  kernel/chain.cpp \
-  kernel/checks.cpp \
-  kernel/coinstats.cpp \
-  kernel/context.cpp \
-  kernel/mempool_persist.cpp \
   mapport.cpp \
   net.cpp \
-  net_processing.cpp \
   netgroup.cpp \
+  net_processing.cpp \
   node/blockstorage.cpp \
   node/caches.cpp \
   node/chainstate.cpp \
   node/coin.cpp \
-  node/connection_types.cpp \
+  node/coinstats.cpp \
   node/context.cpp \
-  node/eviction.cpp \
-  node/interface_ui.cpp \
   node/interfaces.cpp \
-  node/mempool_args.cpp \
-  node/mempool_persist_args.cpp \
   node/miner.cpp \
   node/minisketchwrapper.cpp \
   node/psbt.cpp \
   node/transaction.cpp \
-  node/validation_cache_args.cpp \
+  node/ui_interface.cpp \
   noui.cpp \
   policy/fees.cpp \
-  policy/fees_args.cpp \
   policy/packages.cpp \
   policy/rbf.cpp \
   policy/settings.cpp \
@@ -404,9 +381,8 @@ libqogecoin_node_a_SOURCES = \
   rpc/blockchain.cpp \
   rpc/mempool.cpp \
   rpc/mining.cpp \
+  rpc/misc.cpp \
   rpc/net.cpp \
-  rpc/node.cpp \
-  rpc/output_script.cpp \
   rpc/rawtransaction.cpp \
   rpc/server.cpp \
   rpc/server_util.cpp \
@@ -427,7 +403,6 @@ libqogecoin_node_a_SOURCES = \
 
 if ENABLE_WALLET
 libqogecoin_node_a_SOURCES += wallet/init.cpp
-libqogecoin_node_a_CPPFLAGS += $(BDB_CPPFLAGS)
 endif
 if !ENABLE_WALLET
 libqogecoin_node_a_SOURCES += dummywallet.cpp
@@ -447,7 +422,7 @@ endif
 
 # wallet: shared between qogecoind and qogecoin-qt, but only linked
 # when wallet enabled
-libqogecoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(QOGECOIN_INCLUDES) $(BDB_CPPFLAGS) $(SQLITE_CFLAGS)
+libqogecoin_wallet_a_CPPFLAGS = $(AM_CPPFLAGS) $(QOGECOIN_INCLUDES) $(SQLITE_CFLAGS)
 libqogecoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libqogecoin_wallet_a_SOURCES = \
   wallet/coincontrol.cpp \
@@ -659,12 +634,15 @@ libqogecoin_common_a_SOURCES = \
   $(QOGECOIN_CORE_H)
 
 # util: shared between all executables.
+# This library *must* be included to make sure that the glibc
+# sanity checks are linked.
 libqogecoin_util_a_CPPFLAGS = $(AM_CPPFLAGS) $(QOGECOIN_INCLUDES)
 libqogecoin_util_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libqogecoin_util_a_SOURCES = \
   support/lockedpool.cpp \
   chainparamsbase.cpp \
   clientversion.cpp \
+  compat/glibcxx_sanity.cpp \
   fs.cpp \
   interfaces/echo.cpp \
   interfaces/handler.cpp \
@@ -685,7 +663,6 @@ libqogecoin_util_a_SOURCES = \
   util/getuniquepath.cpp \
   util/hasher.cpp \
   util/sock.cpp \
-  util/syserror.cpp \
   util/system.cpp \
   util/message.cpp \
   util/moneystr.cpp \
@@ -874,15 +851,18 @@ endif
 
 # TODO: libqogecoinkernel is a work in progress consensus engine library, as more
 #       and more modules are decoupled from the consensus engine, this list will
-#       shrink to only those which are absolutely necessary.
+#       shrink to only those which are absolutely necessary. For example, things
+#       like index/*.cpp will be removed.
 libqogecoinkernel_la_SOURCES = \
   kernel/qogecoinkernel.cpp \
   arith_uint256.cpp \
+  blockfilter.cpp \
   chain.cpp \
   chainparamsbase.cpp \
   chainparams.cpp \
   clientversion.cpp \
   coins.cpp \
+  compat/glibcxx_sanity.cpp \
   compressor.cpp \
   consensus/merkle.cpp \
   consensus/tx_check.cpp \
@@ -894,16 +874,17 @@ libqogecoinkernel_la_SOURCES = \
   flatfile.cpp \
   fs.cpp \
   hash.cpp \
-  kernel/chain.cpp \
-  kernel/checks.cpp \
-  kernel/coinstats.cpp \
-  kernel/context.cpp \
-  kernel/mempool_persist.cpp \
+  index/base.cpp \
+  index/blockfilterindex.cpp \
+  index/coinstatsindex.cpp \
+  init/common.cpp \
   key.cpp \
   logging.cpp \
+  netaddress.cpp \
   node/blockstorage.cpp \
   node/chainstate.cpp \
-  node/interface_ui.cpp \
+  node/coinstats.cpp \
+  node/ui_interface.cpp \
   policy/feerate.cpp \
   policy/fees.cpp \
   policy/packages.cpp \
@@ -928,9 +909,11 @@ libqogecoinkernel_la_SOURCES = \
   support/lockedpool.cpp \
   sync.cpp \
   threadinterrupt.cpp \
+  timedata.cpp \
   txdb.cpp \
   txmempool.cpp \
   uint256.cpp \
+  util/asmap.cpp \
   util/bytevectorhash.cpp \
   util/check.cpp \
   util/getuniquepath.cpp \
@@ -940,9 +923,7 @@ libqogecoinkernel_la_SOURCES = \
   util/serfloat.cpp \
   util/settings.cpp \
   util/strencodings.cpp \
-  util/string.cpp \
   util/syscall_sandbox.cpp \
-  util/syserror.cpp \
   util/system.cpp \
   util/thread.cpp \
   util/threadnames.cpp \
@@ -1039,10 +1020,6 @@ libqogecoin_ipc_mpgen_input = \
 EXTRA_DIST += $(libqogecoin_ipc_mpgen_input)
 %.capnp:
 
-# Explicitly list dependencies on generated headers as described in
-# https://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html#Recording-Dependencies-manually
-ipc/capnp/libqogecoin_ipc_a-protocol.$(OBJEXT): $(libqogecoin_ipc_mpgen_input:=.h)
-
 if BUILD_MULTIPROCESS
 LIBQOGECOIN_IPC=libqogecoin_ipc.a
 libqogecoin_ipc_a_SOURCES = \
@@ -1072,15 +1049,6 @@ nodist_libqogecoin_ipc_a_SOURCES = $(libqogecoin_ipc_mpgen_output)
 CLEANFILES += $(libqogecoin_ipc_mpgen_output)
 endif
 
-%.raw.h: %.raw
-	@$(MKDIR_P) $(@D)
-	@{ \
-	 echo "static unsigned const char $(*F)_raw[] = {" && \
-	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
-	 echo "};"; \
-	} > "$@.new" && mv -f "$@.new" "$@"
-	@echo "Generated $@"
-
 include Makefile.minisketch.include
 
 include Makefile.crc32c.include
@@ -1089,7 +1057,9 @@ include Makefile.leveldb.include
 include Makefile.test_util.include
 include Makefile.test_fuzz.include
 
+if ENABLE_TESTS
 include Makefile.test.include
+endif
 
 if ENABLE_BENCH
 include Makefile.bench.include

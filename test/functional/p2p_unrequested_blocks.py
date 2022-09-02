@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2015-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2015-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test processing of unrequested blocks.
@@ -257,11 +257,16 @@ class AcceptBlockTest(QogecoinTestFramework):
         test_node.send_message(msg_block(block_291))
 
         # At this point we've sent an obviously-bogus block, wait for full processing
-        # and assume disconnection
-        test_node.wait_for_disconnect()
+        # without assuming whether we will be disconnected or not
+        try:
+            # Only wait a short while so the test doesn't take forever if we do get
+            # disconnected
+            test_node.sync_with_ping(timeout=1)
+        except AssertionError:
+            test_node.wait_for_disconnect()
 
-        self.nodes[0].disconnect_p2ps()
-        test_node = self.nodes[0].add_p2p_connection(P2PInterface())
+            self.nodes[0].disconnect_p2ps()
+            test_node = self.nodes[0].add_p2p_connection(P2PInterface())
 
         # We should have failed reorg and switched back to 290 (but have block 291)
         assert_equal(self.nodes[0].getblockcount(), 290)

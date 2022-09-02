@@ -1,4 +1,4 @@
-// Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core developers
+// Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -55,7 +55,7 @@ void CalculatePercentilesByWeight(CAmount result[NUM_GETBLOCKSTATS_PERCENTILES],
 UniValue CreateUTXOSnapshot(
     node::NodeContext& node,
     CChainState& chainstate,
-    AutoFile& afile,
+    CAutoFile& afile,
     const fs::path& path,
     const fs::path& tmppath);
 

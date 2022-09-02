@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 '''
@@ -39,7 +39,7 @@ class TestSymbolChecks(unittest.TestCase):
         cc = determine_wellknown_cmd('CC', 'gcc')
 
         # there's no way to do this test for RISC-V at the moment; we build for
-        # RISC-V in a glibc 2.27 environment and we allow all symbols from 2.27.
+        # RISC-V in a glibc 2.27 envinonment and we allow all symbols from 2.27.
         if 'riscv' in get_machine(cc):
             self.skipTest("test not available for RISC-V")
 

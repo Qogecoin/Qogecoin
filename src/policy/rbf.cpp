@@ -1,21 +1,13 @@
-// Copyright (c) 2016-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2016-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <policy/rbf.h>
 
-#include <consensus/amount.h>
-#include <policy/feerate.h>
-#include <primitives/transaction.h>
-#include <sync.h>
+#include <policy/settings.h>
 #include <tinyformat.h>
-#include <txmempool.h>
-#include <uint256.h>
 #include <util/moneystr.h>
 #include <util/rbf.h>
-
-#include <limits>
-#include <vector>
 
 RBFTransactionState IsRBFOptIn(const CTransaction& tx, const CTxMemPool& pool)
 {
@@ -65,15 +57,15 @@ std::optional<std::string> GetEntriesForConflicts(const CTransaction& tx,
     uint64_t nConflictingCount = 0;
     for (const auto& mi : iters_conflicting) {
         nConflictingCount += mi->GetCountWithDescendants();
-        // Rule #5: don't consider replacing more than MAX_REPLACEMENT_CANDIDATES
+        // BIP125 Rule #5: don't consider replacing more than MAX_BIP125_REPLACEMENT_CANDIDATES
         // entries from the mempool. This potentially overestimates the number of actual
         // descendants (i.e. if multiple conflicts share a descendant, it will be counted multiple
         // times), but we just want to be conservative to avoid doing too much work.
-        if (nConflictingCount > MAX_REPLACEMENT_CANDIDATES) {
+        if (nConflictingCount > MAX_BIP125_REPLACEMENT_CANDIDATES) {
             return strprintf("rejecting replacement %s; too many potential replacements (%d > %d)\n",
                              txid.ToString(),
                              nConflictingCount,
-                             MAX_REPLACEMENT_CANDIDATES);
+                             MAX_BIP125_REPLACEMENT_CANDIDATES);
         }
     }
     // Calculate the set of all transactions that would have to be evicted.
@@ -96,7 +88,7 @@ std::optional<std::string> HasNoNewUnconfirmed(const CTransaction& tx,
     }
 
     for (unsigned int j = 0; j < tx.vin.size(); j++) {
-        // Rule #2: We don't want to accept replacements that require low feerate junk to be
+        // BIP125 Rule #2: We don't want to accept replacements that require low feerate junk to be
         // mined first.  Ideally we'd keep track of the ancestor feerates and make the decision
         // based on that, but for now requiring all new inputs to be confirmed works.
         //
@@ -162,7 +154,7 @@ std::optional<std::string> PaysForRBF(CAmount original_fees,
                                       CFeeRate relay_fee,
                                       const uint256& txid)
 {
-    // Rule #3: The replacement fees must be greater than or equal to fees of the
+    // BIP125 Rule #3: The replacement fees must be greater than or equal to fees of the
     // transactions it replaces, otherwise the bandwidth used by those conflicting transactions
     // would not be paid for.
     if (replacement_fees < original_fees) {
@@ -170,7 +162,7 @@ std::optional<std::string> PaysForRBF(CAmount original_fees,
                          txid.ToString(), FormatMoney(replacement_fees), FormatMoney(original_fees));
     }
 
-    // Rule #4: The new transaction must pay for its own bandwidth. Otherwise, we have a DoS
+    // BIP125 Rule #4: The new transaction must pay for its own bandwidth. Otherwise, we have a DoS
     // vector where attackers can cause a transaction to be replaced (and relayed) repeatedly by
     // increasing the fee by tiny amounts.
     CAmount additional_fees = replacement_fees - original_fees;

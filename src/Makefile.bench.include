@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2016 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2015-2016 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -27,7 +27,6 @@ bench_bench_qogecoin_SOURCES = \
   bench/crypto_hash.cpp \
   bench/data.cpp \
   bench/data.h \
-  bench/descriptors.cpp \
   bench/duplicate_inputs.cpp \
   bench/examples.cpp \
   bench/gcs_filter.cpp \
@@ -45,7 +44,6 @@ bench_bench_qogecoin_SOURCES = \
   bench/rollingbloom.cpp \
   bench/rpc_blockchain.cpp \
   bench/rpc_mempool.cpp \
-  bench/strencodings.cpp \
   bench/util_time.cpp \
   bench/verify_script.cpp
 
@@ -95,3 +93,11 @@ bench: $(BENCH_BINARY) FORCE
 qogecoin_bench_clean : FORCE
 	rm -f $(CLEAN_QOGECOIN_BENCH) $(bench_bench_qogecoin_OBJECTS) $(BENCH_BINARY)
 
+%.raw.h: %.raw
+	@$(MKDIR_P) $(@D)
+	@{ \
+	 echo "static unsigned const char $(*F)_raw[] = {" && \
+	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
+	 echo "};"; \
+	} > "$@.new" && mv -f "$@.new" "$@"
+	@echo "Generated $@"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright (c) 2018-2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2018-2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #
@@ -22,8 +22,6 @@ FUNCTION_NAMES_AND_NUMBER_OF_LEADING_ARGUMENTS = [
     'LogConnectFailure,1',
     'LogPrint,1',
     'LogPrintf,0',
-    'LogPrintfCategory,1',
-    'LogPrintLevel,2',
     'printf,0',
     'snprintf,2',
     'sprintf,1',
@@ -77,7 +75,7 @@ def main():
 
         matching_files_filtered = []
         for matching_file in matching_files:
-            if not re.search('^src/(leveldb|secp256k1|minisketch|tinyformat|test/fuzz/strprintf.cpp)', matching_file):
+            if not re.search('^src/(leveldb|secp256k1|minisketch|tinyformat|univalue|test/fuzz/strprintf.cpp)', matching_file):
                 matching_files_filtered.append(matching_file)
         matching_files_filtered.sort()
 

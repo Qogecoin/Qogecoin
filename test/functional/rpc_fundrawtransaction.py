@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2014-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2014-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test the fundrawtransaction RPC."""
@@ -11,9 +11,6 @@ from math import ceil
 
 from test_framework.descriptors import descsum_create
 from test_framework.key import ECKey
-from test_framework.messages import (
-    COIN,
-)
 from test_framework.test_framework import QogecoinTestFramework
 from test_framework.util import (
     assert_approx,
@@ -106,7 +103,6 @@ class RawTransactionsTest(QogecoinTestFramework):
         self.generate(self.nodes[2], 1)
         self.generate(self.nodes[0], 121)
 
-        self.test_weight_calculation()
         self.test_change_position()
         self.test_simple()
         self.test_simple_two_coins()
@@ -301,7 +297,7 @@ class RawTransactionsTest(QogecoinTestFramework):
         inputs  = [ {'txid' : utx['txid'], 'vout' : utx['vout']} ]
         outputs = { self.nodes[0].getnewaddress() : Decimal(4.0) }
         rawtx   = self.nodes[2].createrawtransaction(inputs, outputs)
-        assert_raises_rpc_error(-1, "JSON value of type null is not of expected type string", self.nodes[2].fundrawtransaction, rawtx, {'change_type': None})
+        assert_raises_rpc_error(-1, "JSON value is not a string as expected", self.nodes[2].fundrawtransaction, rawtx, {'change_type': None})
         assert_raises_rpc_error(-5, "Unknown change type ''", self.nodes[2].fundrawtransaction, rawtx, {'change_type': ''})
         rawtx = self.nodes[2].fundrawtransaction(rawtx, {'change_type': 'bech32'})
         dec_tx = self.nodes[2].decoderawtransaction(rawtx['hex'])
@@ -408,7 +404,7 @@ class RawTransactionsTest(QogecoinTestFramework):
         inputs  = [ {'txid' : "1c7f966dab21119bac53213a2bc7532bff1fa844c124fd750a7d0b1332440bd1", 'vout' : 0} ] #invalid vin!
         outputs = { self.nodes[0].getnewaddress() : 1.0}
         rawtx   = self.nodes[2].createrawtransaction(inputs, outputs)
-        assert_raises_rpc_error(-4, "Unable to find UTXO for external input", self.nodes[2].fundrawtransaction, rawtx)
+        assert_raises_rpc_error(-4, "Insufficient funds", self.nodes[2].fundrawtransaction, rawtx)
 
     def test_fee_p2pkh(self):
         """Compare fee of a standard pubkeyhash transaction."""
@@ -1072,38 +1068,6 @@ class RawTransactionsTest(QogecoinTestFramework):
         funded_tx = wallet.fundrawtransaction(raw_tx, {"input_weights": [{"txid": ext_utxo["txid"], "vout": ext_utxo["vout"], "weight": 65539}]})
 
         self.nodes[2].unloadwallet("extfund")
-
-    def test_weight_calculation(self):
-        self.log.info("Test weight calculation with external inputs")
-
-        self.nodes[2].createwallet("test_weight_calculation")
-        wallet = self.nodes[2].get_wallet_rpc("test_weight_calculation")
-
-        addr = wallet.getnewaddress(address_type="bech32")
-        ext_addr = self.nodes[0].getnewaddress(address_type="bech32")
-        txid = self.nodes[0].send([{addr: 5}, {ext_addr: 5}])["txid"]
-        vout = find_vout_for_address(self.nodes[0], txid, addr)
-        ext_vout = find_vout_for_address(self.nodes[0], txid, ext_addr)
-
-        self.nodes[0].sendtoaddress(wallet.getnewaddress(address_type="bech32"), 5)
-        self.generate(self.nodes[0], 1)
-
-        rawtx = wallet.createrawtransaction([{'txid': txid, 'vout': vout}], [{self.nodes[0].getnewaddress(address_type="bech32"): 8}])
-        fundedtx = wallet.fundrawtransaction(rawtx, {'fee_rate': 10, "change_type": "bech32"})
-        # with 71-byte signatures we should expect following tx size
-        # tx overhead (10) + 2 inputs (41 each) + 2 p2wpkh (31 each) + (segwit marker and flag (2) + 2 p2wpkh 71 byte sig witnesses (107 each)) / witness scaling factor (4)
-        tx_size = ceil(10 + 41*2 + 31*2 + (2 + 107*2)/4)
-        assert_equal(fundedtx['fee'] * COIN, tx_size * 10)
-
-        # Using the other output should have 72 byte sigs
-        rawtx = wallet.createrawtransaction([{'txid': txid, 'vout': ext_vout}], [{self.nodes[0].getnewaddress(): 13}])
-        ext_desc = self.nodes[0].getaddressinfo(ext_addr)["desc"]
-        fundedtx = wallet.fundrawtransaction(rawtx, {'fee_rate': 10, "change_type": "bech32", "solving_data": {"descriptors": [ext_desc]}})
-        # tx overhead (10) + 3 inputs (41 each) + 2 p2wpkh(31 each) + (segwit marker and flag (2) + 2 p2wpkh 71 bytes sig witnesses (107 each) + p2wpkh 72 byte sig witness (108)) / witness scaling factor (4)
-        tx_size = ceil(10 + 41*3 + 31*2 + (2 + 107*2 + 108)/4)
-        assert_equal(fundedtx['fee'] * COIN, tx_size * 10)
-
-        self.nodes[2].unloadwallet("test_weight_calculation")
 
     def test_include_unsafe(self):
         self.log.info("Test fundrawtxn with unsafe inputs")

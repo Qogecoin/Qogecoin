@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -35,7 +35,8 @@ class TxViewDelegate : public QAbstractItemDelegate
     Q_OBJECT
 public:
     explicit TxViewDelegate(const PlatformStyle* _platformStyle, QObject* parent = nullptr)
-        : QAbstractItemDelegate(parent), platformStyle(_platformStyle)
+        : QAbstractItemDelegate(parent), unit(QogecoinUnit::Qoge),
+          platformStyle(_platformStyle)
     {
         connect(this, &TxViewDelegate::width_changed, this, &TxViewDelegate::sizeHintChanged);
     }
@@ -124,7 +125,7 @@ public:
         return {DECORATION_SIZE + 8 + minimum_text_width, DECORATION_SIZE};
     }
 
-    QogecoinUnit unit{QogecoinUnit::QOGE};
+    QogecoinUnit unit;
 
 Q_SIGNALS:
     //! An intermediate signal for emitting from the `paint() const` member function.
@@ -146,6 +147,8 @@ OverviewPage::OverviewPage(const PlatformStyle *platformStyle, QWidget *parent) 
     txdelegate(new TxViewDelegate(platformStyle, this))
 {
     ui->setupUi(this);
+
+    m_balances.balance = -1;
 
     // use a SingleColorIcon for the "out of sync warning" icon
     QIcon icon = m_platform_style->SingleColorIcon(QStringLiteral(":/icons/warning"));
@@ -175,9 +178,8 @@ void OverviewPage::handleTransactionClicked(const QModelIndex &index)
 void OverviewPage::setPrivacy(bool privacy)
 {
     m_privacy = privacy;
-    const auto& balances = walletModel->getCachedBalance();
-    if (balances.balance != -1) {
-        setBalance(balances);
+    if (m_balances.balance != -1) {
+        setBalance(m_balances);
     }
 
     ui->listTransactions->setVisible(!m_privacy);
@@ -196,6 +198,7 @@ OverviewPage::~OverviewPage()
 void OverviewPage::setBalance(const interfaces::WalletBalances& balances)
 {
     QogecoinUnit unit = walletModel->getOptionsModel()->getDisplayUnit();
+    m_balances = balances;
     if (walletModel->wallet().isLegacy()) {
         if (walletModel->wallet().privateKeysDisabled()) {
             ui->labelBalance->setText(QogecoinUnits::formatWithPrivacy(unit, balances.watch_only_balance, QogecoinUnits::SeparatorStyle::ALWAYS, m_privacy));
@@ -274,13 +277,14 @@ void OverviewPage::setWalletModel(WalletModel *model)
         ui->listTransactions->setModelColumn(TransactionTableModel::ToAddress);
 
         // Keep up to date with wallet
-        setBalance(model->getCachedBalance());
+        interfaces::Wallet& wallet = model->wallet();
+        interfaces::WalletBalances balances = wallet.getBalances();
+        setBalance(balances);
         connect(model, &WalletModel::balanceChanged, this, &OverviewPage::setBalance);
 
         connect(model->getOptionsModel(), &OptionsModel::displayUnitChanged, this, &OverviewPage::updateDisplayUnit);
 
-        interfaces::Wallet& wallet = model->wallet();
-        updateWatchOnlyLabels(wallet.haveWatchOnly() && !wallet.privateKeysDisabled());
+        updateWatchOnlyLabels(wallet.haveWatchOnly() && !model->wallet().privateKeysDisabled());
         connect(model, &WalletModel::notifyWatchonlyChanged, [this](bool showWatchOnly) {
             updateWatchOnlyLabels(showWatchOnly && !walletModel->wallet().privateKeysDisabled());
         });
@@ -303,10 +307,10 @@ void OverviewPage::changeEvent(QEvent* e)
 
 void OverviewPage::updateDisplayUnit()
 {
-    if (walletModel && walletModel->getOptionsModel()) {
-        const auto& balances = walletModel->getCachedBalance();
-        if (balances.balance != -1) {
-            setBalance(balances);
+    if(walletModel && walletModel->getOptionsModel())
+    {
+        if (m_balances.balance != -1) {
+            setBalance(m_balances);
         }
 
         // Update txdelegate->unit with the current unit

@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -7,7 +7,6 @@
 #include <addrman.h>
 #include <banman.h>
 #include <interfaces/chain.h>
-#include <kernel/context.h>
 #include <net.h>
 #include <net_processing.h>
 #include <netgroup.h>
@@ -17,6 +16,6 @@
 #include <validation.h>
 
 namespace node {
-NodeContext::NodeContext() = default;
-NodeContext::~NodeContext() = default;
+NodeContext::NodeContext() {}
+NodeContext::~NodeContext() {}
 } // namespace node

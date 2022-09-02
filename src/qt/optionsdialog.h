@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -8,7 +8,6 @@
 #include <QDialog>
 #include <QValidator>
 
-class ClientModel;
 class OptionsModel;
 class QValidatedLineEdit;
 
@@ -46,7 +45,6 @@ public:
         TAB_NETWORK,
     };
 
-    void setClientModel(ClientModel* client_model);
     void setModel(OptionsModel *model);
     void setMapper();
     void setCurrentTab(OptionsDialog::Tab tab);
@@ -74,7 +72,6 @@ Q_SIGNALS:
 
 private:
     Ui::OptionsDialog *ui;
-    ClientModel* m_client_model{nullptr};
     OptionsModel *model;
     QDataWidgetMapper *mapper;
 };

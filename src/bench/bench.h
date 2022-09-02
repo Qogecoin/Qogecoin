@@ -1,4 +1,4 @@
-// Copyright (c) 2015-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2015-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -43,7 +43,6 @@ typedef std::function<void(Bench&)> BenchFunction;
 
 struct Args {
     bool is_list_only;
-    bool sanity_check;
     std::chrono::milliseconds min_time;
     std::vector<double> asymptote;
     fs::path output_csv;

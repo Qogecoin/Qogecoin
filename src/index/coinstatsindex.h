@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,7 +9,7 @@
 #include <crypto/muhash.h>
 #include <flatfile.h>
 #include <index/base.h>
-#include <kernel/coinstats.h>
+#include <node/coinstats.h>
 
 /**
  * CoinStatsIndex maintains statistics on the UTXO set.
@@ -39,13 +39,13 @@ private:
     bool AllowPrune() const override { return true; }
 
 protected:
-    bool CustomInit(const std::optional<interfaces::BlockKey>& block) override;
+    bool Init() override;
 
-    bool CustomCommit(CDBBatch& batch) override;
+    bool CommitInternal(CDBBatch& batch) override;
 
-    bool CustomAppend(const interfaces::BlockInfo& block) override;
+    bool WriteBlock(const CBlock& block, const CBlockIndex* pindex) override;
 
-    bool CustomRewind(const interfaces::BlockKey& current_tip, const interfaces::BlockKey& new_tip) override;
+    bool Rewind(const CBlockIndex* current_tip, const CBlockIndex* new_tip) override;
 
     BaseIndex::DB& GetDB() const override { return *m_db; }
 
@@ -53,10 +53,10 @@ protected:
 
 public:
     // Constructs the index, which becomes available to be queried.
-    explicit CoinStatsIndex(std::unique_ptr<interfaces::Chain> chain, size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
+    explicit CoinStatsIndex(size_t n_cache_size, bool f_memory = false, bool f_wipe = false);
 
     // Look up stats for a specific block using CBlockIndex
-    std::optional<kernel::CCoinsStats> LookUpStats(const CBlockIndex* block_index) const;
+    bool LookUpStats(const CBlockIndex* block_index, node::CCoinsStats& coins_stats) const;
 };
 
 /// The global UTXO set hash object.

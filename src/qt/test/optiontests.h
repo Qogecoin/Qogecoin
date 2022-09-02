@@ -1,4 +1,4 @@
-// Copyright (c) 2019 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2019 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -6,8 +6,6 @@
 #define QOGECOIN_QT_TEST_OPTIONTESTS_H
 
 #include <qt/optionsmodel.h>
-#include <univalue.h>
-#include <util/settings.h>
 
 #include <QObject>
 
@@ -15,18 +13,14 @@ class OptionTests : public QObject
 {
     Q_OBJECT
 public:
-    explicit OptionTests(interfaces::Node& node);
+    explicit OptionTests(interfaces::Node& node) : m_node(node) {}
 
 private Q_SLOTS:
-    void init(); // called before each test function execution.
-    void migrateSettings();
-    void integerGetArgBug();
+    void optionTests();
     void parametersInteraction();
-    void extractFilter();
 
 private:
     interfaces::Node& m_node;
-    util::Settings m_previous_settings;
 };
 
 #endif // QOGECOIN_QT_TEST_OPTIONTESTS_H

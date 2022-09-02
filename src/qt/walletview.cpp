@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,7 +19,7 @@
 #include <qt/walletmodel.h>
 
 #include <interfaces/node.h>
-#include <node/interface_ui.h>
+#include <node/ui_interface.h>
 #include <util/strencodings.h>
 
 #include <QAction>
@@ -111,7 +111,9 @@ WalletView::WalletView(WalletModel* wallet_model, const PlatformStyle* _platform
     connect(walletModel, &WalletModel::showProgress, this, &WalletView::showProgress);
 }
 
-WalletView::~WalletView() = default;
+WalletView::~WalletView()
+{
+}
 
 void WalletView::setClientModel(ClientModel *_clientModel)
 {

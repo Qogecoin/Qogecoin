@@ -1,4 +1,4 @@
-// Copyright (c) 2016-2020 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2016-2020 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -104,7 +104,7 @@ public:
     // Dummy for deserialization
     CBlockHeaderAndShortTxIDs() {}
 
-    CBlockHeaderAndShortTxIDs(const CBlock& block);
+    CBlockHeaderAndShortTxIDs(const CBlock& block, bool fUseWTXID);
 
     uint64_t GetShortID(const uint256& txhash) const;
 

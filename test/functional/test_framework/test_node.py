@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Class for qogecoind node under test"""
@@ -423,7 +423,7 @@ class TestNode():
         self._raise_assertion_error('Expected messages "{}" does not partially match log:\n\n{}\n\n'.format(str(expected_msgs), print_log))
 
     @contextlib.contextmanager
-    def wait_for_debug_log(self, expected_msgs, timeout=60):
+    def wait_for_debug_log(self, expected_msgs, timeout=60, ignore_case=False):
         """
         Block until we see a particular debug log message fragment or until we exceed the timeout.
         Return:
@@ -431,17 +431,18 @@ class TestNode():
         """
         time_end = time.time() + timeout * self.timeout_factor
         prev_size = self.debug_log_bytes()
+        re_flags = re.MULTILINE | (re.IGNORECASE if ignore_case else 0)
 
         yield
 
         while True:
             found = True
-            with open(self.debug_log_path, "rb") as dl:
+            with open(self.debug_log_path, encoding='utf-8') as dl:
                 dl.seek(prev_size)
                 log = dl.read()
 
             for expected_msg in expected_msgs:
-                if expected_msg not in log:
+                if re.search(re.escape(expected_msg), log, flags=re_flags) is None:
                     found = False
 
             if found:

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright 2014 BitPay Inc.
-# Copyright 2016-2017 The Qogecoin and Qogecoin Core Authors
+# Copyright 2016-2017 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test framework for qogecoin utils.
@@ -22,8 +22,7 @@ import sys
 def main():
     config = configparser.ConfigParser()
     config.optionxform = str
-    with open(os.path.join(os.path.dirname(__file__), "../config.ini"), encoding="utf8") as f:
-        config.read_file(f)
+    config.read_file(open(os.path.join(os.path.dirname(__file__), "../config.ini"), encoding="utf8"))
     env_conf = dict(config.items('environment'))
 
     parser = argparse.ArgumentParser(description=__doc__)
@@ -44,8 +43,7 @@ def main():
 def bctester(testDir, input_basename, buildenv):
     """ Loads and parses the input file, runs all tests and reports results"""
     input_filename = os.path.join(testDir, input_basename)
-    with open(input_filename, encoding="utf8") as f:
-        raw_data = f.read()
+    raw_data = open(input_filename, encoding="utf8").read()
     input_data = json.loads(raw_data)
 
     failed_testcases = []
@@ -82,8 +80,7 @@ def bctest(testDir, testObj, buildenv):
     inputData = None
     if "input" in testObj:
         filename = os.path.join(testDir, testObj["input"])
-        with open(filename, encoding="utf8") as f:
-            inputData = f.read()
+        inputData = open(filename, encoding="utf8").read()
         stdinCfg = subprocess.PIPE
 
     # Read the expected output data (if there is any)
@@ -94,8 +91,7 @@ def bctest(testDir, testObj, buildenv):
         outputFn = testObj['output_cmp']
         outputType = os.path.splitext(outputFn)[1][1:]  # output type from file extension (determines how to compare)
         try:
-            with open(os.path.join(testDir, outputFn), encoding="utf8") as f:
-                outputData = f.read()
+            outputData = open(os.path.join(testDir, outputFn), encoding="utf8").read()
         except:
             logging.error("Output file " + outputFn + " cannot be opened")
             raise

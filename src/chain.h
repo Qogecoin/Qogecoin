@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,8 +11,8 @@
 #include <flatfile.h>
 #include <primitives/block.h>
 #include <sync.h>
+#include <tinyformat.h>
 #include <uint256.h>
-#include <util/time.h>
 
 #include <vector>
 
@@ -138,7 +138,7 @@ enum BlockStatus : uint32_t {
      * If set, this indicates that the block index entry is assumed-valid.
      * Certain diagnostics will be skipped in e.g. CheckBlockIndex().
      * It almost certainly means that the block's full validation is pending
-     * on a background chainstate. See `doc/design/assumeutxo.md`.
+     * on a background chainstate. See `doc/assumeutxo.md`.
      */
     BLOCK_ASSUMED_VALID      =   256,
 };
@@ -263,7 +263,6 @@ public:
 
     uint256 GetBlockHash() const
     {
-        assert(phashBlock != nullptr);
         return *phashBlock;
     }
 
@@ -275,11 +274,6 @@ public:
      * Does not imply the transactions are still stored on disk. (IsBlockPruned might return true)
      */
     bool HaveTxsDownloaded() const { return nChainTx != 0; }
-
-    NodeSeconds Time() const
-    {
-        return NodeSeconds{std::chrono::seconds{nTime}};
-    }
 
     int64_t GetBlockTime() const
     {
@@ -312,7 +306,13 @@ public:
         return pbegin[(pend - pbegin) / 2];
     }
 
-    std::string ToString() const;
+    std::string ToString() const
+    {
+        return strprintf("CBlockIndex(pprev=%p, nHeight=%d, merkle=%s, hashBlock=%s)",
+            pprev, nHeight,
+            hashMerkleRoot.ToString(),
+            GetBlockHash().ToString());
+    }
 
     //! Check whether this block index entry is valid up to the passed validity level.
     bool IsValid(enum BlockStatus nUpTo = BLOCK_VALID_TRANSACTIONS) const
@@ -407,7 +407,7 @@ public:
         READWRITE(obj.nNonce);
     }
 
-    uint256 ConstructBlockHash() const
+    uint256 GetBlockHash() const
     {
         CBlockHeader block;
         block.nVersion = nVersion;
@@ -419,8 +419,16 @@ public:
         return block.GetHash();
     }
 
-    uint256 GetBlockHash() = delete;
-    std::string ToString() = delete;
+
+    std::string ToString() const
+    {
+        std::string str = "CDiskBlockIndex(";
+        str += CBlockIndex::ToString();
+        str += strprintf("\n                hashBlock=%s, hashPrev=%s)",
+            GetBlockHash().ToString(),
+            hashPrev.ToString());
+        return str;
+    }
 };
 
 /** An in-memory indexed chain of blocks. */
@@ -476,7 +484,7 @@ public:
     }
 
     /** Set/initialize a chain with a given tip. */
-    void SetTip(CBlockIndex& block);
+    void SetTip(CBlockIndex* pindex);
 
     /** Return a CBlockLocator that refers to a block in this chain (by default the tip). */
     CBlockLocator GetLocator(const CBlockIndex* pindex = nullptr) const;

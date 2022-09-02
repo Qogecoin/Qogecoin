@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -32,7 +32,7 @@ RPCHelpMan walletpassphrase()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     std::shared_ptr<CWallet> const wallet = GetWalletForJSONRPCRequest(request);
-    if (!wallet) return UniValue::VNULL;
+    if (!wallet) return NullUniValue;
     CWallet* const pwallet = wallet.get();
 
     int64_t nSleepTime;
@@ -54,7 +54,7 @@ RPCHelpMan walletpassphrase()
         strWalletPass = request.params[0].get_str().c_str();
 
         // Get the timeout
-        nSleepTime = request.params[1].getInt<int64_t>();
+        nSleepTime = request.params[1].get_int64();
         // Timeout cannot be negative, otherwise it will relock immediately
         if (nSleepTime < 0) {
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Timeout cannot be negative.");
@@ -98,7 +98,7 @@ RPCHelpMan walletpassphrase()
         }
     }, nSleepTime);
 
-    return UniValue::VNULL;
+    return NullUniValue;
 },
     };
 }
@@ -120,7 +120,7 @@ RPCHelpMan walletpassphrasechange()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     std::shared_ptr<CWallet> const pwallet = GetWalletForJSONRPCRequest(request);
-    if (!pwallet) return UniValue::VNULL;
+    if (!pwallet) return NullUniValue;
 
     LOCK(pwallet->cs_wallet);
 
@@ -146,7 +146,7 @@ RPCHelpMan walletpassphrasechange()
         throw JSONRPCError(RPC_WALLET_PASSPHRASE_INCORRECT, "Error: The wallet passphrase entered was incorrect.");
     }
 
-    return UniValue::VNULL;
+    return NullUniValue;
 },
     };
 }
@@ -173,7 +173,7 @@ RPCHelpMan walletlock()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     std::shared_ptr<CWallet> const pwallet = GetWalletForJSONRPCRequest(request);
-    if (!pwallet) return UniValue::VNULL;
+    if (!pwallet) return NullUniValue;
 
     LOCK(pwallet->cs_wallet);
 
@@ -184,7 +184,7 @@ RPCHelpMan walletlock()
     pwallet->Lock();
     pwallet->nRelockTime = 0;
 
-    return UniValue::VNULL;
+    return NullUniValue;
 },
     };
 }
@@ -217,7 +217,7 @@ RPCHelpMan encryptwallet()
         [&](const RPCHelpMan& self, const JSONRPCRequest& request) -> UniValue
 {
     std::shared_ptr<CWallet> const pwallet = GetWalletForJSONRPCRequest(request);
-    if (!pwallet) return UniValue::VNULL;
+    if (!pwallet) return NullUniValue;
 
     LOCK(pwallet->cs_wallet);
 

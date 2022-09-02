@@ -1,12 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <banman.h>
 
 #include <netaddress.h>
-#include <node/interface_ui.h>
+#include <node/ui_interface.h>
 #include <sync.h>
 #include <util/system.h>
 #include <util/time.h>
@@ -16,19 +16,6 @@
 BanMan::BanMan(fs::path ban_file, CClientUIInterface* client_interface, int64_t default_ban_time)
     : m_client_interface(client_interface), m_ban_db(std::move(ban_file)), m_default_ban_time(default_ban_time)
 {
-    LoadBanlist();
-    DumpBanlist();
-}
-
-BanMan::~BanMan()
-{
-    DumpBanlist();
-}
-
-void BanMan::LoadBanlist()
-{
-    LOCK(m_cs_banned);
-
     if (m_client_interface) m_client_interface->InitMessage(_("Loading banlist…").translated);
 
     int64_t n_start = GetTimeMillis();
@@ -42,6 +29,13 @@ void BanMan::LoadBanlist()
         m_banned = {};
         m_is_dirty = true;
     }
+
+    DumpBanlist();
+}
+
+BanMan::~BanMan()
+{
+    DumpBanlist();
 }
 
 void BanMan::DumpBanlist()
@@ -179,24 +173,23 @@ void BanMan::GetBanned(banmap_t& banmap)
 
 void BanMan::SweepBanned()
 {
-    AssertLockHeld(m_cs_banned);
-
     int64_t now = GetTime();
     bool notify_ui = false;
-    banmap_t::iterator it = m_banned.begin();
-    while (it != m_banned.end()) {
-        CSubNet sub_net = (*it).first;
-        CBanEntry ban_entry = (*it).second;
-        if (!sub_net.IsValid() || now > ban_entry.nBanUntil) {
-            m_banned.erase(it++);
-            m_is_dirty = true;
-            notify_ui = true;
-            LogPrint(BCLog::NET, "Removed banned node address/subnet: %s\n", sub_net.ToString());
-        } else {
-            ++it;
+    {
+        LOCK(m_cs_banned);
+        banmap_t::iterator it = m_banned.begin();
+        while (it != m_banned.end()) {
+            CSubNet sub_net = (*it).first;
+            CBanEntry ban_entry = (*it).second;
+            if (!sub_net.IsValid() || now > ban_entry.nBanUntil) {
+                m_banned.erase(it++);
+                m_is_dirty = true;
+                notify_ui = true;
+                LogPrint(BCLog::NET, "Removed banned node address/subnet: %s\n", sub_net.ToString());
+            } else
+                ++it;
         }
     }
-
     // update UI
     if (notify_ui && m_client_interface) {
         m_client_interface->BannedListChanged();

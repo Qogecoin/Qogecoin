@@ -1,22 +1,18 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <hash.h>
-#include <key.h>
-#include <key_io.h>
-#include <pubkey.h>
-#include <script/standard.h>
-#include <serialize.h>
-#include <uint256.h>
+#include <hash.h>            // For CHashWriter
+#include <key.h>             // For CKey
+#include <key_io.h>          // For DecodeDestination()
+#include <pubkey.h>          // For CPubKey
+#include <script/standard.h> // For CTxDestination, IsValidDestination(), PKHash
+#include <serialize.h>       // For SER_GETHASH
 #include <util/message.h>
-#include <util/strencodings.h>
+#include <util/strencodings.h> // For DecodeBase64()
 
-#include <cassert>
-#include <optional>
 #include <string>
-#include <variant>
 #include <vector>
 
 /**
@@ -74,7 +70,7 @@ bool MessageSign(
 
 uint256 MessageHash(const std::string& message)
 {
-    HashWriter hasher{};
+    CHashWriter hasher(SER_GETHASH, 0);
     hasher << MESSAGE_MAGIC << message;
 
     return hasher.GetHash();

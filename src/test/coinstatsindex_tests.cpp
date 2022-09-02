@@ -1,10 +1,9 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <chainparams.h>
 #include <index/coinstatsindex.h>
-#include <interfaces/chain.h>
 #include <test/util/setup_common.h>
 #include <test/util/validation.h>
 #include <util/time.h>
@@ -13,6 +12,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include <chrono>
+
+using node::CCoinsStats;
+using node::CoinStatsHashType;
 
 BOOST_AUTO_TEST_SUITE(coinstatsindex_tests)
 
@@ -29,8 +31,9 @@ static void IndexWaitSynced(BaseIndex& index)
 
 BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
 {
-    CoinStatsIndex coin_stats_index{interfaces::MakeChain(m_node), 1 << 20, true};
+    CoinStatsIndex coin_stats_index{1 << 20, true};
 
+    CCoinsStats coin_stats{CoinStatsHashType::MUHASH};
     const CBlockIndex* block_index;
     {
         LOCK(cs_main);
@@ -38,13 +41,13 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
     }
 
     // CoinStatsIndex should not be found before it is started.
-    BOOST_CHECK(!coin_stats_index.LookUpStats(block_index));
+    BOOST_CHECK(!coin_stats_index.LookUpStats(block_index, coin_stats));
 
     // BlockUntilSyncedToCurrentChain should return false before CoinStatsIndex
     // is started.
     BOOST_CHECK(!coin_stats_index.BlockUntilSyncedToCurrentChain());
 
-    BOOST_REQUIRE(coin_stats_index.Start());
+    BOOST_REQUIRE(coin_stats_index.Start(m_node.chainman->ActiveChainstate()));
 
     IndexWaitSynced(coin_stats_index);
 
@@ -54,10 +57,10 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
         LOCK(cs_main);
         genesis_block_index = m_node.chainman->ActiveChain().Genesis();
     }
-    BOOST_CHECK(coin_stats_index.LookUpStats(genesis_block_index));
+    BOOST_CHECK(coin_stats_index.LookUpStats(genesis_block_index, coin_stats));
 
     // Check that CoinStatsIndex updates with new blocks.
-    BOOST_CHECK(coin_stats_index.LookUpStats(block_index));
+    coin_stats_index.LookUpStats(block_index, coin_stats);
 
     const CScript script_pub_key{CScript() << ToByteVector(coinbaseKey.GetPubKey()) << OP_CHECKSIG};
     std::vector<CMutableTransaction> noTxns;
@@ -66,12 +69,13 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_initial_sync, TestChain100Setup)
     // Let the CoinStatsIndex to catch up again.
     BOOST_CHECK(coin_stats_index.BlockUntilSyncedToCurrentChain());
 
+    CCoinsStats new_coin_stats{CoinStatsHashType::MUHASH};
     const CBlockIndex* new_block_index;
     {
         LOCK(cs_main);
         new_block_index = m_node.chainman->ActiveChain().Tip();
     }
-    BOOST_CHECK(coin_stats_index.LookUpStats(new_block_index));
+    coin_stats_index.LookUpStats(new_block_index, new_coin_stats);
 
     BOOST_CHECK(block_index != new_block_index);
 
@@ -88,8 +92,8 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_unclean_shutdown, TestChain100Setup)
     CChainState& chainstate = Assert(m_node.chainman)->ActiveChainstate();
     const CChainParams& params = Params();
     {
-        CoinStatsIndex index{interfaces::MakeChain(m_node), 1 << 20};
-        BOOST_REQUIRE(index.Start());
+        CoinStatsIndex index{1 << 20};
+        BOOST_REQUIRE(index.Start(chainstate));
         IndexWaitSynced(index);
         std::shared_ptr<const CBlock> new_block;
         CBlockIndex* new_block_index = nullptr;
@@ -114,9 +118,9 @@ BOOST_FIXTURE_TEST_CASE(coinstatsindex_unclean_shutdown, TestChain100Setup)
     }
 
     {
-        CoinStatsIndex index{interfaces::MakeChain(m_node), 1 << 20};
+        CoinStatsIndex index{1 << 20};
         // Make sure the index can be loaded.
-        BOOST_REQUIRE(index.Start());
+        BOOST_REQUIRE(index.Start(chainstate));
         index.Stop();
     }
 }

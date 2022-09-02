@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """An example functional test
@@ -14,15 +14,8 @@ is testing and *how* it's being tested
 from collections import defaultdict
 
 # Avoid wildcard * imports
-# Use lexicographically sorted multi-line imports
-from test_framework.blocktools import (
-    create_block,
-    create_coinbase,
-)
-from test_framework.messages import (
-    CInv,
-    MSG_BLOCK,
-)
+from test_framework.blocktools import (create_block, create_coinbase)
+from test_framework.messages import CInv, MSG_BLOCK
 from test_framework.p2p import (
     P2PInterface,
     msg_block,

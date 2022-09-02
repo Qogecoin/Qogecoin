@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2011-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -40,9 +40,9 @@ public:
       @note Source: https://en.qogecoin.it/wiki/Units . Please add only sensible ones
      */
     enum class Unit {
-        QOGE,
-        mQOGE,
-        uQOGE,
+        Qoge,
+        mQoge,
+        uQoge,
         SAT
     };
     Q_ENUM(Unit)

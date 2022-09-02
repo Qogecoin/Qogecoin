@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2017-2021 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2017-2021 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 """Test various command line arguments and configuration file parameters."""
@@ -85,7 +85,7 @@ class ConfArgsTest(QogecoinTestFramework):
 
     def test_invalid_command_line_options(self):
         self.nodes[0].assert_start_raises_init_error(
-            expected_msg='Error: Error parsing command line arguments: Can not set -proxy with no value. Please specify value with -proxy=value.',
+            expected_msg='Error: No proxy server specified. Use -proxy=<ip> or -proxy=<ip:port>.',
             extra_args=['-proxy'],
         )
 
@@ -247,8 +247,7 @@ class ConfArgsTest(QogecoinTestFramework):
         conf_file = os.path.join(default_data_dir, "qogecoin.conf")
 
         # datadir needs to be set before [chain] section
-        with open(conf_file, encoding='utf8') as f:
-            conf_file_contents = f.read()
+        conf_file_contents = open(conf_file, encoding='utf8').read()
         with open(conf_file, 'w', encoding='utf8') as f:
             f.write(f"datadir={new_data_dir}\n")
             f.write(conf_file_contents)

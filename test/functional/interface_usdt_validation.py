@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) 2022 The Qogecoin and Qogecoin Core Authors
+# Copyright (c) 2022 The Bitcoin and Qogecoin Core Authors
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -91,10 +91,10 @@ class ValidationTracepointTest(QogecoinTestFramework):
         # that the handle_* functions succeeded.
         BLOCKS_EXPECTED = 2
         blocks_checked = 0
-        expected_blocks = dict()
+        expected_blocks = list()
 
         self.log.info("hook into the validation:block_connected tracepoint")
-        ctx = USDT(pid=self.nodes[0].process.pid)
+        ctx = USDT(path=str(self.options.qogecoind))
         ctx.enable_probe(probe="validation:block_connected",
                          fn_name="trace_block_connected")
         bpf = BPF(text=validation_blockconnected_program,
@@ -104,16 +104,15 @@ class ValidationTracepointTest(QogecoinTestFramework):
             nonlocal expected_blocks, blocks_checked
             event = ctypes.cast(data, ctypes.POINTER(Block)).contents
             self.log.info(f"handle_blockconnected(): {event}")
-            block_hash = bytes(event.hash[::-1]).hex()
-            block = expected_blocks[block_hash]
-            assert_equal(block["hash"], block_hash)
+            block = expected_blocks.pop(0)
+            assert_equal(block["hash"], bytes(event.hash[::-1]).hex())
             assert_equal(block["height"], event.height)
             assert_equal(len(block["tx"]), event.transactions)
             assert_equal(len([tx["vin"] for tx in block["tx"]]), event.inputs)
             assert_equal(0, event.sigops)  # no sigops in coinbase tx
             # only plausibility checks
             assert(event.duration > 0)
-            del expected_blocks[block_hash]
+
             blocks_checked += 1
 
         bpf["block_connected"].open_perf_buffer(
@@ -123,7 +122,7 @@ class ValidationTracepointTest(QogecoinTestFramework):
         block_hashes = self.generatetoaddress(
             self.nodes[0], BLOCKS_EXPECTED, ADDRESS_BCRT1_UNSPENDABLE)
         for block_hash in block_hashes:
-            expected_blocks[block_hash] = self.nodes[0].getblock(block_hash, 2)
+            expected_blocks.append(self.nodes[0].getblock(block_hash, 2))
 
         bpf.perf_buffer_poll(timeout=200)
         bpf.cleanup()

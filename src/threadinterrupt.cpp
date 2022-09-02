@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2018 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2018 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -28,8 +28,18 @@ void CThreadInterrupt::operator()()
     cond.notify_all();
 }
 
-bool CThreadInterrupt::sleep_for(Clock::duration rel_time)
+bool CThreadInterrupt::sleep_for(std::chrono::milliseconds rel_time)
 {
     WAIT_LOCK(mut, lock);
     return !cond.wait_for(lock, rel_time, [this]() { return flag.load(std::memory_order_acquire); });
+}
+
+bool CThreadInterrupt::sleep_for(std::chrono::seconds rel_time)
+{
+    return sleep_for(std::chrono::duration_cast<std::chrono::milliseconds>(rel_time));
+}
+
+bool CThreadInterrupt::sleep_for(std::chrono::minutes rel_time)
+{
+    return sleep_for(std::chrono::duration_cast<std::chrono::milliseconds>(rel_time));
 }

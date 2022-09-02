@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2009-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,18 +9,17 @@
 
 #include <chainparams.h>
 #include <clientversion.h>
-#include <compat/compat.h>
+#include <compat.h>
 #include <init.h>
 #include <interfaces/chain.h>
 #include <interfaces/init.h>
 #include <node/context.h>
-#include <node/interface_ui.h>
+#include <node/ui_interface.h>
 #include <noui.h>
 #include <shutdown.h>
 #include <util/check.h>
 #include <util/strencodings.h>
 #include <util/syscall_sandbox.h>
-#include <util/syserror.h>
 #include <util/system.h>
 #include <util/threadnames.h>
 #include <util/tokenpipe.h>
@@ -188,14 +187,11 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }
-
-        node.kernel = std::make_unique<kernel::Context>();
-        if (!AppInitSanityChecks(*node.kernel))
+        if (!AppInitSanityChecks())
         {
             // InitError will have been called with detailed error, which ends up on console
             return false;
         }
-
         if (args.GetBoolArg("-daemon", DEFAULT_DAEMON) || args.GetBoolArg("-daemonwait", DEFAULT_DAEMONWAIT)) {
 #if HAVE_DECL_FORK
             tfm::format(std::cout, PACKAGE_NAME " starting\n");
@@ -210,7 +206,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
                 }
                 break;
             case -1: // Error happened.
-                return InitError(Untranslated(strprintf("fork_daemon() failed: %s\n", SysErrorString(errno))));
+                return InitError(Untranslated(strprintf("fork_daemon() failed: %s\n", strerror(errno))));
             default: { // Parent: wait and exit.
                 int token = daemon_ep.TokenRead();
                 if (token) { // Success
@@ -256,7 +252,7 @@ static bool AppInit(NodeContext& node, int argc, char* argv[])
     return fRet;
 }
 
-MAIN_FUNCTION
+int main(int argc, char* argv[])
 {
 #ifdef WIN32
     util::WinCmdLineArgs winArgs;

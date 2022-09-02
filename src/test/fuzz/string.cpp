@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 The Qogecoin and Qogecoin Core Authors
+// Copyright (c) 2020-2021 The Bitcoin and Qogecoin Core Authors
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -224,12 +224,7 @@ FUZZ_TARGET(string)
         int64_t amount_out;
         (void)ParseFixedPoint(random_string_1, fuzzed_data_provider.ConsumeIntegralInRange<int>(0, 1024), &amount_out);
     }
-    {
-        const auto single_split{SplitString(random_string_1, fuzzed_data_provider.ConsumeIntegral<char>())};
-        assert(single_split.size() >= 1);
-        const auto any_split{SplitString(random_string_1, random_string_2)};
-        assert(any_split.size() >= 1);
-    }
+    (void)SplitString(random_string_1, fuzzed_data_provider.ConsumeIntegral<char>());
     {
         (void)Untranslated(random_string_1);
         const bilingual_str bs1{random_string_1, random_string_2};
